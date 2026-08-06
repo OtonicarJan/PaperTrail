@@ -1,0 +1,46 @@
+name: Weekly Paper Digest
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # 9:00 AM CET (UTC+2 summer) every Monday
+  workflow_dispatch:        # also allows manual trigger from GitHub UI
+
+jobs:
+  fetch-papers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-hf-BioLORD-2023
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run PaperTrail
+        run: python papertrail.py --days 7 --top 150 --output html
+
+      - name: Commit and push report
+        run: |
+          git config user.name  "PaperTrail Bot"
+          git config user.email "actions@github.com"
+          git add papers.html
+          git diff --cached --quiet || git commit -m "Weekly digest $(date +'%Y-%m-%d')"
+          git push

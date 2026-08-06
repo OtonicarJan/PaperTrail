@@ -1,0 +1,5 @@
+sentence-transformers
+requests
+numpy
+pyyaml
+rich

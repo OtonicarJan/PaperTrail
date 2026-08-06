@@ -1,0 +1,169 @@
+# ── PaperTrail configuration ───────────────────────────────────────────────────
+
+keywords:
+  - tumor evolution
+  - clonal evolution
+  - chromosomal instability
+  - CIN
+  - aneuploidy
+  - genomic instability
+  - digital pathology
+  - histopathology
+  - genomics
+  - cancer
+
+# Minimum relevance score (0.0–1.0). Start at 0.30, tune up to reduce noise.
+threshold: 0.30
+
+# Sources to query (comment out any you don't need)
+sources:
+  - arxiv
+  - biorxiv
+  - pubmed
+
+# ── Journal filtering ──────────────────────────────────────────────────────────
+#
+# whitelist_only: true  → only journals listed below pass (preprints always pass)
+# whitelist_only: false → all unknown journals pass; filter by min_impact_factor
+whitelist_only: true
+min_impact_factor: 10.0  
+
+# Fragments that match any journal name → always blocked (case-insensitive)
+journal_blacklist_fragments:
+  - veterinary
+  - equine
+  - bovine
+  - porcine
+  - poultry
+  - aquaculture
+  - fisheries
+  - agronomy
+  - horticulture
+  - plant science
+  - soil science
+  - dental
+  - dentistry
+  - orthodontic
+
+# Whitelisted journals: name (lowercase) → impact factor (for display only)
+# Add or remove journals freely. Preprints are always included regardless.
+journal_whitelist:
+  # ── Nature Portfolio ──
+  nature: 50.5
+  nature medicine: 58.7
+  nature genetics: 31.7
+  nature cell biology: 21.3
+  nature communications: 14.7
+  nature methods: 36.1
+  nature biotechnology: 33.1
+  nature cancer: 23.5
+  nature structural & molecular biology: 14.0
+  # nature metabolism: 20.8
+  nature aging: 17.0
+  nature chemical biology: 14.8
+  nature immunology: 27.0
+  nature microbiology: 28.0
+  nature neuroscience: 21.2
+  nature reviews cancer: 72.0
+  nature reviews genetics: 57.8
+  nature reviews molecular cell biology: 94.4
+  nature reviews immunology: 100.3
+  nature reviews clinical oncology: 81.1
+  nature protocols: 13.1
+  npj precision oncology: 7.4
+  npj genomic medicine: 7.7
+  npj cancer: 5.1
+  communications biology: 5.9
+
+  # ── Cell Press ──
+  cell: 45.5
+  cancer cell: 38.6
+  cell stem cell: 23.9
+  cell reports: 7.5
+  cell reports medicine: 11.7
+  cell systems: 11.1
+  cell chemical biology: 8.4
+  cell genomics: 11.1
+  molecular cell: 14.5
+  developmental cell: 11.8
+  current biology: 9.2
+  immunity: 25.5
+  iscience: 5.8
+  med: 17.0
+
+  # ── Science family ──
+  science: 44.7
+  science advances: 13.6
+  science translational medicine: 15.8
+  science immunology: 17.6
+  science signaling: 8.9
+
+  # ── NEJM / Lancet / JAMA ──
+  new england journal of medicine: 96.2
+  the new england journal of medicine: 96.2
+  lancet: 98.4
+  the lancet: 98.4
+  lancet oncology: 51.1
+  lancet haematology: 24.7
+  jama: 63.1
+  jama oncology: 28.4
+  jama network open: 10.5
+
+  # ── Cancer-specific ──
+  cancer discovery: 29.7
+  cancer research: 11.2
+  journal of clinical oncology: 42.1
+  annals of oncology: 51.8
+  clinical cancer research: 11.5
+  leukemia: 12.8
+  blood: 21.0
+  blood cancer journal: 7.4
+  blood advances: 7.4
+  journal of hematology & oncology: 29.5
+  haematologica: 10.1
+  molecular cancer: 27.7
+  oncogene: 7.9
+  british journal of cancer: 9.1
+  european journal of cancer: 8.4
+  international journal of cancer: 6.4
+  cancer letters: 9.1
+  breast cancer research: 9.6
+  journal of the national cancer institute: 9.9
+  gynecologic oncology: 5.6
+
+  # ── Genomics / bioinformatics ──
+  genome research: 6.2
+  genome biology: 10.7
+  genome medicine: 10.4
+  nucleic acids research: 14.9
+  bioinformatics: 5.8
+  briefings in bioinformatics: 9.5
+  plos genetics: 4.5
+  plos biology: 9.8
+  plos computational biology: 4.3
+  genes chromosomes and cancer: 3.8
+  genes, chromosomes and cancer: 3.8
+  american journal of human genetics: 8.9
+  genetics in medicine: 7.2
+
+  # ── General high-IF ──
+  proceedings of the national academy of sciences: 9.4
+  pnas: 9.4
+  elife: 6.4
+  embo journal: 11.4
+  embo reports: 7.9
+  embo molecular medicine: 11.0
+  journal of cell biology: 7.4
+  journal of experimental medicine: 12.6
+  cell death and differentiation: 13.7
+  cell death & differentiation: 13.7
+  cell death and disease: 9.0
+  plos medicine: 15.8
+
+# ── Scoring ────────────────────────────────────────────────────────────────────
+# final_score = α·semantic + (1-α)·BM25
+# Lower α = stricter keyword match; higher α = more synonym catching
+semantic_weight: 1.0
+
+# Embedding model (downloaded once, ~420MB)
+embedding_model: FremyCompany/BioLORD-2023
