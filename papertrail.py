@@ -121,8 +121,11 @@ def fetch_biorxiv(keywords, since: datetime) -> tuple[list[dict], int | None]:
                 break
 
             for p in batch:
+                doi = p['doi'].strip()
+                # Use direct bioRxiv/medRxiv URL — more reliable than doi.org redirect
+                biorxiv_url = f"https://www.{server}.org/content/{doi}"
                 papers.append({
-                    "id":       f"https://doi.org/{p['doi']}",
+                    "id":       biorxiv_url,
                     "title":    p["title"].strip(),
                     "abstract": p["abstract"].strip().replace("\n", " "),
                     "authors":  p.get("authors", ""),
