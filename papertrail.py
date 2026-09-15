@@ -35,7 +35,7 @@ def load_config(path="config.yaml"):
 # ── Fetchers ──────────────────────────────────────────────────────────────────
 
 def fetch_arxiv(keywords, since: datetime) -> list[dict]:
-    """Query arXiv across all categories."""
+    """Query arXiv across all categories, with retry on 429 rate limit."""
     query = " OR ".join(f'abs:"{k}"' for k in keywords)
     params = {
         "search_query": query,
@@ -44,8 +44,20 @@ def fetch_arxiv(keywords, since: datetime) -> list[dict]:
         "sortBy": "submittedDate",
         "sortOrder": "descending",
     }
-    r = requests.get("https://export.arxiv.org/api/query", params=params, timeout=20)
-    r.raise_for_status()
+    # arXiv rate limits aggressively — wait before request, retry on 429
+    time.sleep(3)
+    for attempt in range(3):
+        r = requests.get("https://export.arxiv.org/api/query", params=params, timeout=30)
+        if r.status_code == 429:
+            wait = 30 * (attempt + 1)
+            console.print(f"  [yellow]arXiv rate limited, waiting {wait}s…[/]")
+            time.sleep(wait)
+            continue
+        r.raise_for_status()
+        break
+    else:
+        console.print("  [yellow]Warning: arXiv rate limit not resolved after retries, skipping[/]")
+        return []
 
     import xml.etree.ElementTree as ET
     ns = {"atom": "http://www.w3.org/2005/Atom"}
