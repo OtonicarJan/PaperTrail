@@ -44,19 +44,25 @@ def fetch_arxiv(keywords, since: datetime) -> list[dict]:
         "sortBy": "submittedDate",
         "sortOrder": "descending",
     }
-    # arXiv rate limits aggressively — wait before request, retry on 429
     time.sleep(3)
     for attempt in range(3):
-        r = requests.get("https://export.arxiv.org/api/query", params=params, timeout=30)
-        if r.status_code == 429:
+        try:
+            r = requests.get("https://export.arxiv.org/api/query",
+                             params=params, timeout=60)
+        except requests.exceptions.ReadTimeout:
             wait = 30 * (attempt + 1)
+            console.print(f"  [yellow]arXiv timed out, waiting {wait}s…[/]")
+            time.sleep(wait)
+            continue
+        if r.status_code == 429:
+            wait = 60 * (attempt + 1)
             console.print(f"  [yellow]arXiv rate limited, waiting {wait}s…[/]")
             time.sleep(wait)
             continue
         r.raise_for_status()
         break
     else:
-        console.print("  [yellow]Warning: arXiv rate limit not resolved after retries, skipping[/]")
+        console.print("  [yellow]Warning: arXiv unavailable after retries, skipping[/]")
         return []
 
     import xml.etree.ElementTree as ET
