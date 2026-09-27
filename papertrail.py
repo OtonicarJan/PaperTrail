@@ -9,10 +9,13 @@ Usage:
     python papertrail.py --output json    # dump to papers.json
     python papertrail.py --output csv     # dump to papers.csv
     python papertrail.py --output html    # generate papers.html report
+    python papertrail.py --until 2026-09-21 --output html
+                                          # re-run the week before a past date
 """
 
 import argparse, json, csv, sys, warnings, re, time
-from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
+from datetime import date, datetime, timedelta, timezone
 from math import log
 
 import yaml
@@ -34,9 +37,10 @@ def load_config(path="config.yaml"):
 
 # ── Fetchers ──────────────────────────────────────────────────────────────────
 
-def fetch_arxiv(keywords, since: datetime) -> list[dict]:
+def fetch_arxiv(keywords, since: datetime, until: datetime) -> list[dict]:
     """Query arXiv across all categories, with retry on 429 rate limit."""
-    query = " OR ".join(f'abs:"{k}"' for k in keywords)
+    window = f"submittedDate:[{since:%Y%m%d%H%M} TO {until - timedelta(minutes=1):%Y%m%d%H%M}]"
+    query = "(" + " OR ".join(f'abs:"{k}"' for k in keywords) + ") AND " + window
     params = {
         "search_query": query,
         "start": 0,
@@ -44,25 +48,31 @@ def fetch_arxiv(keywords, since: datetime) -> list[dict]:
         "sortBy": "submittedDate",
         "sortOrder": "descending",
     }
+    # Keep ":" in field prefixes (abs:, submittedDate:) unencoded: arXiv has
+    # been seen answering 406 to the %3A form that requests would send
+    url = "https://export.arxiv.org/api/query?" + urlencode(params, safe=":")
     time.sleep(3)
-    for attempt in range(3):
+    r = None
+    for attempt in range(4):
         try:
-            r = requests.get("https://export.arxiv.org/api/query",
-                             params=params, timeout=60)
+            r = requests.get(url, timeout=60)
         except requests.exceptions.ReadTimeout:
             wait = 30 * (attempt + 1)
             console.print(f"  [yellow]arXiv timed out, waiting {wait}s…[/]")
             time.sleep(wait)
             continue
-        if r.status_code == 429:
-            wait = 60 * (attempt + 1)
-            console.print(f"  [yellow]arXiv rate limited, waiting {wait}s…[/]")
+        # arXiv throttles with 429/503, and with 406 under bot protection
+        if r.status_code in (429, 406, 503):
+            if attempt == 3:
+                break
+            wait = 90 * (attempt + 1)
+            console.print(f"  [yellow]arXiv refused ({r.status_code}), waiting {wait}s…[/]")
             time.sleep(wait)
             continue
-        r.raise_for_status()
         break
-    else:
-        console.print("  [yellow]Warning: arXiv unavailable after retries, skipping[/]")
+    if r is None or not r.ok:
+        status = r.status_code if r is not None else "no response"
+        console.print(f"  [yellow]Warning: arXiv unavailable ({status}), skipping[/]")
         return []
 
     import xml.etree.ElementTree as ET
@@ -72,7 +82,7 @@ def fetch_arxiv(keywords, since: datetime) -> list[dict]:
     for entry in root.findall("atom:entry", ns):
         published_str = entry.find("atom:published", ns).text
         published = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
-        if published < since:
+        if not since <= published < until:
             continue
         papers.append({
             "id":       entry.find("atom:id", ns).text.strip(),
@@ -90,17 +100,17 @@ def fetch_arxiv(keywords, since: datetime) -> list[dict]:
     return papers
 
 
-def fetch_biorxiv(keywords, since: datetime) -> tuple[list[dict], int | None]:
+def fetch_biorxiv(keywords, since: datetime, until: datetime) -> tuple[list[dict], int | None]:
     """Query bioRxiv and medRxiv, paginating via total count in API response."""
     since_str = since.strftime("%Y-%m-%d")
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    last_str  = (until - timedelta(days=1)).strftime("%Y-%m-%d")   # API dates are inclusive
     papers = []
     grand_total = None
     for server in ("biorxiv", "medrxiv"):
         cursor = 0
         total = None
         while True:
-            url = f"https://api.biorxiv.org/details/{server}/{since_str}/{today_str}/{cursor}/json"
+            url = f"https://api.biorxiv.org/details/{server}/{since_str}/{last_str}/{cursor}/json"
             try:
                 r = requests.get(url, timeout=20)
                 r.raise_for_status()
@@ -171,7 +181,7 @@ def fetch_biorxiv(keywords, since: datetime) -> tuple[list[dict], int | None]:
     return papers, grand_total
 
 
-def fetch_pubmed(keywords, since: datetime, min_if: float, whitelist_only: bool,
+def fetch_pubmed(keywords, since: datetime, until: datetime, min_if: float, whitelist_only: bool,
                  whitelist: set[str], blacklist_fragments: list[str],
                  if_lookup: dict[str, float],
                  anchor_keywords: list[str] | None = None) -> list[dict]:
@@ -179,7 +189,8 @@ def fetch_pubmed(keywords, since: datetime, min_if: float, whitelist_only: bool,
     Runs one esearch per keyword and deduplicates PMIDs, avoiding broad terms
     from flooding the results when mixed with specific ones.
     """
-    days_back = (datetime.now(timezone.utc) - since).days + 1
+    mindate = since.strftime("%Y/%m/%d")
+    maxdate = (until - timedelta(days=1)).strftime("%Y/%m/%d")   # inclusive
 
     # Collect PMIDs per keyword separately, then deduplicate.
     # This ensures "scDNA-seq" (rare, specific) isn't drowned by "cancer" (broad).
@@ -189,7 +200,8 @@ def fetch_pubmed(keywords, since: datetime, min_if: float, whitelist_only: bool,
         base_params = {
             "db":       "pubmed",
             "term":     query,
-            "reldate":  days_back,
+            "mindate":  mindate,
+            "maxdate":  maxdate,
             "datetype": "edat",
             "retmax":   500,
             "retmode":  "json",
@@ -363,13 +375,15 @@ def get_if(journal: str, if_lookup: dict[str, float]) -> float | None:
 
 # ── Relevance scoring ─────────────────────────────────────────────────────────
 #
-# Hybrid score using per-keyword MAX (not centroid/mean):
+# Semantic score = max over core keywords of cosine(paper, description):
 #
-#   sem(p)   = max_i ( k_i · p )          k_i, p are unit-normalised embeddings
-#   lex(p)   = max_i ( BM25_norm(k_i, p) )
+#   sem(p)   = max_i ( d_i · p )          d_i = embedded keyword description
+#   lex(p)   = max_j ( BM25_norm(t_j, p) ) over core + context terms
 #   score(p) = α · sem(p) + (1-α) · lex(p)
 #
-# Taking max makes scoring monotone: adding a keyword can only raise scores.
+# Gate: a paper passes if it literally mentions a core keyword and scores
+# ≥ threshold, or mentions any keyword (core or context) and scores
+# ≥ rescue_threshold. Context terms ("cancer") alone can't let a paper in.
 # BM25: IDF(k) · tf·(k1+1) / (tf + k1·(1 - b + b·|p|/avgdl))
 #       k1=1.5, b=0.75 (standard)
 
@@ -377,38 +391,31 @@ def _tokenize(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", text.lower())
 
 
-def score_papers(papers: list[dict], keywords: list[str],
-                 model_name: str, threshold: float, alpha: float = 0.3) -> list[dict]:
-    """Score papers using per-keyword max similarity (semantic + BM25).
-
-    sem(p)   = max_i ( k_i · p )           cosine, unit-normalised embeddings
-    lex(p)   = max_i ( BM25_norm(k_i, p) )
-    score(p) = α · sem(p) + (1-α) · lex(p)
-
-    Hard gate: lex(p) must be > 0, i.e. at least one keyword token must
-    literally appear in the text. Eliminates semantic false positives.
-    """
+def score_papers(papers: list[dict], keywords: list[str], descriptions: list[str],
+                 context: list[str], model_name: str, threshold: float,
+                 rescue_threshold: float, alpha: float = 1.0) -> list[dict]:
+    """Score papers against keyword descriptions (semantic) and terms (BM25)."""
     with console.status(f"[cyan]Loading embedding model ({model_name})…"):
         model = SentenceTransformer(model_name)
 
-    kw_embeddings = model.encode(keywords, normalize_embeddings=True)
+    terms = keywords + context
+    desc_embeddings = model.encode(descriptions, normalize_embeddings=True)
     texts = [f"{p['title']}. {p['abstract']}" for p in papers]
 
     with console.status(f"[cyan]Scoring {len(texts)} papers…"):
         paper_embeddings = model.encode(texts, normalize_embeddings=True,
                                         batch_size=32, show_progress_bar=False)
 
-        # Semantic: max cosine similarity across all keywords
-        sim_matrix = paper_embeddings @ kw_embeddings.T
-        sem_scores = sim_matrix.max(axis=1)
+        # Semantic: max cosine similarity across core keyword descriptions
+        sem_scores = (paper_embeddings @ desc_embeddings.T).max(axis=1)
 
-        # BM25: per keyword, normalised independently, then take max
+        # BM25: per term, normalised independently, then take max
         tokenized = [_tokenize(t) for t in texts]
         N         = len(tokenized)
         avgdl     = sum(len(d) for d in tokenized) / max(N, 1)
         k1, b     = 1.5, 0.75
-        bm_matrix = np.zeros((N, len(keywords)))
-        for j, kw in enumerate(keywords):
+        bm_matrix = np.zeros((N, len(terms)))
+        for j, kw in enumerate(terms):
             kw_tokens = _tokenize(kw)
             if not kw_tokens:
                 continue
@@ -422,18 +429,21 @@ def score_papers(papers: list[dict], keywords: list[str],
             if mx > 0:
                 bm_matrix[:, j] /= mx
         lex_scores = bm_matrix.max(axis=1)
+        core_hits  = bm_matrix[:, :len(keywords)].max(axis=1, initial=0) > 0
 
     scored = []
     for i, paper in enumerate(papers):
         sem = float(sem_scores[i])
         lex = float(lex_scores[i])
-        if lex == 0:          # hard gate: keyword must appear literally
+        if lex == 0:          # hard gate: some keyword must appear literally
             continue
         combined = alpha * sem + (1 - alpha) * lex
-        if combined >= threshold:
+        if combined >= (threshold if core_hits[i] else rescue_threshold):
+            matched = [terms[j] for j in np.flatnonzero(bm_matrix[i])]
             scored.append({**paper, "score": round(combined, 4),
                            "score_semantic": round(sem, 4),
-                           "score_lexical":  round(lex, 4)})
+                           "score_lexical":  round(lex, 4),
+                           "matched":        matched})
 
     return sorted(scored, key=lambda x: x["score"], reverse=True)
 
@@ -480,29 +490,37 @@ def write_csv(papers: list[dict], top_n: int, path="papers.csv"):
 def main():
     parser = argparse.ArgumentParser(description="Fetch and rank recent papers.")
     parser.add_argument("--days",      type=int,   default=7)
+    parser.add_argument("--until",     type=date.fromisoformat, default=None,
+                        help="end of the window, exclusive (YYYY-MM-DD, default: today)")
     parser.add_argument("--top",       type=int,   default=15)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--output",    choices=["terminal", "json", "csv", "html"], default="terminal")
     parser.add_argument("--config",    default="config.yaml")
+    parser.add_argument("--sources",   default=None,
+                        help="comma-separated subset of the configured sources, e.g. biorxiv,pubmed")
     parser.add_argument("--verbose",   action="store_true")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
 
+    # Keywords are plain strings or {term, description, weight} entries
     raw_kw = cfg["keywords"]
-    if raw_kw and isinstance(raw_kw[0], dict):
-        keywords = [k["term"] for k in raw_kw]
-        weights  = [float(k.get("weight", 1.0)) for k in raw_kw]
-    else:
-        keywords = [str(k) for k in raw_kw]
-        weights  = [1.0] * len(keywords)
+    keywords     = [str(k["term"]) if isinstance(k, dict) else str(k) for k in raw_kw]
+    descriptions = [str(k.get("description") or k["term"]) if isinstance(k, dict) else str(k)
+                    for k in raw_kw]
+    weights      = [float(k.get("weight", 1.0)) if isinstance(k, dict) else 1.0 for k in raw_kw]
+    context      = [str(k) for k in cfg.get("context_keywords", [])]
+    fetch_terms  = keywords + context
 
     threshold           = args.threshold if args.threshold is not None else cfg.get("threshold", 0.30)
+    rescue_threshold    = cfg.get("rescue_threshold", threshold)
     sources             = cfg.get("sources", ["arxiv", "biorxiv", "pubmed"])
+    if args.sources:
+        sources = [s.strip() for s in args.sources.split(",") if s.strip()]
     min_if              = cfg.get("min_impact_factor", 5.0)
     whitelist_only      = cfg.get("whitelist_only", True)
     model               = cfg.get("embedding_model", "FremyCompany/BioLORD-2023")
-    alpha               = cfg.get("semantic_weight", 0.3)
+    alpha               = cfg.get("semantic_weight", 1.0)
 
     # Load journal lists from config — all lowercase for matching
     raw_whitelist       = cfg.get("journal_whitelist", {})
@@ -513,7 +531,11 @@ def main():
                   if isinstance(v, (int, float))}
     anchor_keywords = cfg.get("anchor_keywords", None)
 
-    since = datetime.now(timezone.utc) - timedelta(days=args.days)
+    # Whole days: [until - days, until). Consecutive weekly runs neither
+    # overlap nor leave gaps, and past weeks can be re-run exactly.
+    report_date = args.until or datetime.now(timezone.utc).date()
+    until = datetime.combine(report_date, datetime.min.time(), tzinfo=timezone.utc)
+    since = until - timedelta(days=args.days)
 
     all_uniform = all(w == 1.0 for w in weights)
     kw_display = ", ".join(
@@ -521,35 +543,39 @@ def main():
         for k, w in zip(keywords, weights)
     )
     console.print(f"[bold]Keywords:[/] {kw_display}")
-    console.print(f"[bold]Searching:[/] past {args.days} days across {', '.join(sources)}")
-    console.print(f"[bold]Threshold:[/] {threshold}\n")
+    if context:
+        console.print(f"[bold]Context:[/]  {', '.join(context)}")
+    console.print(f"[bold]Searching:[/] {since:%Y-%m-%d} – {until - timedelta(days=1):%Y-%m-%d} "
+                  f"({args.days} days) across {', '.join(sources)}")
+    console.print(f"[bold]Threshold:[/] {threshold} (rescue {rescue_threshold})\n")
 
     all_papers = []
     if "arxiv" in sources:
         with console.status("[cyan]Fetching arXiv…"):
-            fetched = fetch_arxiv(keywords, since)
+            fetched = fetch_arxiv(fetch_terms, since, until)
         all_papers += fetched
         console.print(f"  arXiv:   [green]{len(fetched)} papers[/]")
 
     if "biorxiv" in sources:
         with console.status("[cyan]Fetching bioRxiv / medRxiv…"):
-            fetched, biorxiv_total = fetch_biorxiv(keywords, since)
+            fetched, biorxiv_total = fetch_biorxiv(fetch_terms, since, until)
         all_papers += fetched
         total_str = f" of {biorxiv_total} total" if biorxiv_total else ""
         console.print(f"  bioRxiv: [green]{len(fetched)}{total_str} papers[/]")
 
     if "pubmed" in sources:
         with console.status("[cyan]Fetching PubMed…"):
-            fetched = fetch_pubmed(keywords, since, min_if, whitelist_only,
+            fetched = fetch_pubmed(fetch_terms, since, until, min_if, whitelist_only,
                                    whitelist, blacklist_fragments, if_lookup,
                                    anchor_keywords)
         all_papers += fetched
         console.print(f"  PubMed:  [green]{len(fetched)} papers[/]")
 
-    # Deduplicate by normalised title
+    # Deduplicate by normalised title (ignoring case and punctuation, so a
+    # preprint and its journal version with a trailing "." collapse)
     seen, unique = set(), []
     for p in all_papers:
-        key = re.sub(r"\s+", " ", p["title"].lower().strip())
+        key = re.sub(r"[^a-z0-9]+", " ", p["title"].lower()).strip()
         if key not in seen:
             seen.add(key)
             unique.append(p)
@@ -560,7 +586,8 @@ def main():
         console.print("[yellow]No papers found. Try increasing --days or broadening keywords.[/]")
         sys.exit(0)
 
-    ranked = score_papers(unique, keywords, model, threshold, alpha)
+    ranked = score_papers(unique, keywords, descriptions, context, model,
+                          threshold, rescue_threshold, alpha)
     console.print(f"[bold]Above threshold ({threshold}):[/] {len(ranked)} papers\n")
 
     if args.verbose and ranked:
@@ -576,8 +603,10 @@ def main():
         write_csv(ranked, args.top)
     elif args.output == "html":
         from write_html import write_html
-        write_html(ranked, args.top, keywords, args.days, sources)
-        console.print(f"[green]Saved {min(args.top, len(ranked))} papers to papers.html[/]")
+        report = write_html(ranked, args.top, fetch_terms, args.days, sources, threshold,
+                            report_date=report_date)
+        console.print(f"[green]Saved {min(args.top, len(ranked))} papers to papers.html "
+                      f"(archived as {report})[/]")
 
 
 if __name__ == "__main__":

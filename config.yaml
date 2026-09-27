@@ -1,19 +1,38 @@
 # ── PaperTrail configuration ───────────────────────────────────────────────────
 
+# Core keywords. `term` is matched literally in title + abstract (the gate,
+# the filter chips); `description` is what the embedding model compares
+# papers to. Short terms alone embed as vague concepts ("tumor evolution" ≈
+# any tumour biology), so describe what the lab actually means.
 keywords:
-  - tumor evolution
-  - clonal evolution
-  - chromosomal instability
-  - CIN
-  - aneuploidy
-  - genomic instability
-  - digital pathology
-  - histopathology
+  - term: tumor evolution
+    description: "tumor evolution: how cancer cell populations evolve over time, reconstructed from phylogenetic trees of tumors"
+  - term: clonal evolution
+    description: "clonal evolution and subclonal heterogeneity in cancer, clonal selection and expansion"
+  - term: chromosomal instability
+    description: "chromosomal instability: ongoing chromosome missegregation in dividing cancer cells"
+  - term: CIN
+    description: "CIN: chromosome segregation errors and whole-chromosome instability"
+  - term: aneuploidy
+    description: "aneuploidy: whole-chromosome and arm-level copy number changes"
+  - term: genomic instability
+    description: "genomic instability: somatic copy number alterations and structural variants in cancer genomes"
+  - term: digital pathology
+    description: "digital pathology: deep learning on whole-slide images of tissue"
+  - term: histopathology
+    description: "computational histopathology: image analysis of tumor tissue sections"
+
+# Context keywords: used to fetch candidates, but too broad to count as a
+# match on their own and not used for scoring.
+context_keywords:
   - genomics
   - cancer
 
-# Minimum relevance score (0.0–1.0). Start at 0.30, tune up to reduce noise.
-threshold: 0.30
+# Minimum relevance score (0.0–1.0) for papers that mention a core keyword.
+threshold: 0.40
+# Papers that mention no core keyword need this higher score instead, so
+# strongly on-topic papers phrased differently still get through.
+rescue_threshold: 0.60
 
 # Sources to query (comment out any you don't need)
 sources:
