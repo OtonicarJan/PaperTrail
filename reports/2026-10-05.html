@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaperTrail — October 05, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #F7F7F5;
+    --surface:   #FFFFFF;
+    --text:      #1A1A2E;
+    --body:      #374151;
+    --muted:     #6B7280;
+    --accent:    #2D6A4F;
+    --accent-bg: #E3F0E9;
+    --border:    #E5E7EB;
+    --high:      #2D6A4F;
+    --mid:       #D97706;
+    --low:       #DC2626;
+    --badge-bg:  #EEF2FF;
+    --badge-fg:  #4338CA;
+    --pre-bg:    #FEF3C7;
+    --pre-fg:    #92400E;
+    --mark:      #FDE68A;
+    --star:      #D97706;
+    --shadow:    rgba(0,0,0,0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #14161B;
+      --surface:   #1C1F26;
+      --text:      #ECEDEF;
+      --body:      #C9CCD3;
+      --muted:     #9097A3;
+      --accent:    #6FC69A;
+      --accent-bg: #1F3A2D;
+      --border:    #2D313A;
+      --high:      #6FC69A;
+      --mid:       #F0A93B;
+      --low:       #F07171;
+      --badge-bg:  #262B45;
+      --badge-fg:  #A5B4FC;
+      --pre-bg:    #3A2F14;
+      --pre-fg:    #F5C969;
+      --mark:      #5C4A12;
+      --star:      #F0A93B;
+      --shadow:    rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:        #14161B;
+    --surface:   #1C1F26;
+    --text:      #ECEDEF;
+    --body:      #C9CCD3;
+    --muted:     #9097A3;
+    --accent:    #6FC69A;
+    --accent-bg: #1F3A2D;
+    --border:    #2D313A;
+    --high:      #6FC69A;
+    --mid:       #F0A93B;
+    --low:       #F07171;
+    --badge-bg:  #262B45;
+    --badge-fg:  #A5B4FC;
+    --pre-bg:    #3A2F14;
+    --pre-fg:    #F5C969;
+    --mark:      #5C4A12;
+    --star:      #F0A93B;
+    --shadow:    rgba(0,0,0,0.35);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page { max-width: 780px; margin: 0 auto; }
+  button, input, select { font: inherit; color: inherit; }
+
+  /* ── Header ── */
+  header { margin-bottom: 1.25rem; }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--text); }
+  .head-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; }
+  .weeks { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; }
+  .weeks select {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.82rem; max-width: 62vw;
+  }
+  .wk-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); text-decoration: none; font-size: 1.1rem; line-height: 1;
+  }
+  .wk-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .wk-btn[aria-disabled="true"] { opacity: 0.35; pointer-events: none; }
+  .weeks .linkish { text-decoration: none; white-space: nowrap; }
+  .imported-note { color: var(--muted); font-size: 0.78rem; margin-top: 0.25rem; }
+  .meta { margin-top: 0.4rem; color: var(--muted); font-size: 0.85rem; }
+
+  /* ── Controls ── */
+  .controls {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    padding: 0.75rem 0 0.9rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .search {
+    width: 100%;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 0.9rem;
+  }
+  .search-row { display: flex; gap: 0.5rem; align-items: stretch; }
+  .search-row .search { flex: 1; min-width: 0; }
+  .search-row .seg button { padding: 0 0.75rem; white-space: nowrap; }
+  .week-tag {
+    font-size: 0.72rem; font-weight: 500; color: var(--accent);
+    text-decoration: none; border-bottom: 1px dotted currentColor;
+  }
+  .week-tag:hover { border-bottom-style: solid; }
+  .more-btn {
+    align-self: center; margin-top: 0.25rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.45rem 1.1rem; font-size: 0.85rem; cursor: pointer; color: var(--accent);
+  }
+  .more-btn:hover { border-color: var(--accent); }
+  .search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; font-size: 0.82rem; color: var(--muted); }
+  .row label { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .row select {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.2rem 0.4rem; font-size: 0.82rem;
+  }
+  .row input[type=range] { accent-color: var(--accent); width: 110px; }
+  .row input[type=checkbox] { accent-color: var(--accent); }
+  .min-val { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 500; min-width: 2.2em; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .chip {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.74rem; font-weight: 500;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .chip .n { opacity: 0.7; margin-left: 0.25rem; font-variant-numeric: tabular-nums; }
+
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    background: var(--surface); border: none; padding: 0.2rem 0.65rem;
+    font-size: 0.8rem; cursor: pointer; color: var(--muted);
+  }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+
+  .status { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--muted); }
+  .linkish { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+  .linkish:hover { text-decoration: underline; }
+
+  /* ── Cards ── */
+  .papers { display: flex; flex-direction: column; gap: 1rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--score-color, var(--border));
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem 1rem;
+    transition: box-shadow 0.15s ease, opacity 0.15s ease;
+  }
+  .card:hover { box-shadow: 0 4px 16px var(--shadow); }
+  .card.is-read { opacity: 0.55; }
+  .card.is-read:hover { opacity: 1; }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .title:hover { color: var(--accent); }
+
+  /* Score pill + bar */
+  .score-block { flex-shrink: 0; text-align: right; min-width: 48px; }
+  .score-pill {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--score-color);
+    font-variant-numeric: tabular-nums;
+  }
+  .score-bar-track {
+    width: 48px; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--score-color);
+  }
+
+  .card-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    display: flex; flex-wrap: wrap; gap: 0.3rem 0.75rem;
+    align-items: center;
+  }
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    background: var(--badge-bg);
+    color: var(--badge-fg);
+  }
+  .badge.preprint { background: var(--pre-bg); color: var(--pre-fg); }
+
+  .abstract {
+    font-size: 0.875rem;
+    color: var(--body);
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+  mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+  .toggle-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent); font-size: 0.8rem; font-weight: 500;
+    padding: 0; margin-top: 0.3rem; display: block;
+  }
+  .toggle-btn:hover { text-decoration: underline; }
+
+  .card-foot {
+    margin-top: 0.7rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem;
+    font-size: 0.78rem;
+  }
+  .matched { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-right: auto; }
+  .matched .kw {
+    background: var(--accent-bg); color: var(--accent);
+    font-size: 0.7rem; font-weight: 500;
+    padding: 0.05rem 0.5rem; border-radius: 999px;
+    border: none; cursor: pointer;
+  }
+  .act {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 0.78rem; padding: 0.1rem 0;
+    display: inline-flex; align-items: center; gap: 0.25rem;
+  }
+  .act:hover { color: var(--accent); }
+  .act.on { color: var(--star); }
+  .act.read-on { color: var(--accent); }
+  .act svg { width: 14px; height: 14px; }
+  .doi-link { color: var(--muted); text-decoration: none; }
+  .doi-link:hover { color: var(--accent); }
+
+  .empty {
+    text-align: center; color: var(--muted); font-size: 0.9rem;
+    padding: 3rem 1rem; border: 1px dashed var(--border); border-radius: 8px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 560px) {
+    .search-row { flex-direction: column; }
+    .search-row .seg button { flex: 1; padding: 0.3rem 0.5rem; }
+    body { padding: 1.25rem 1rem 3rem; }
+    .card { padding: 1rem 1rem 0.85rem; }
+    .controls { position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="head-row">
+    <div class="logo">Paper<span>Trail</span></div>
+    <nav class="weeks" id="weeks" aria-label="Weekly reports" hidden>
+      <a class="wk-btn" id="prev" title="Previous week  ( [ )" aria-label="Previous week">‹</a>
+      <select id="week" aria-label="Choose week"></select>
+      <a class="wk-btn" id="next" title="Next week  ( ] )" aria-label="Next week">›</a>
+      <a class="linkish" id="latest">Latest →</a>
+    </nav>
+  </div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<div class="controls">
+  <div class="search-row">
+    <input class="search" id="q" type="search" placeholder="Search papers, authors, journals…" autocomplete="off">
+    <div class="seg" id="scope" role="group" aria-label="Search scope">
+      <button data-scope="week" aria-pressed="true">This week</button>
+      <button data-scope="all">All weeks</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="seg" id="view" role="group" aria-label="View">
+      <button data-view="all" aria-pressed="true">All</button>
+      <button data-view="unread">Unread</button>
+      <button data-view="starred">Starred <span id="star-n"></span></button>
+    </div>
+    <label>Sort
+      <select id="sort">
+        <option value="score">Relevance</option>
+        <option value="date">Newest</option>
+        <option value="if">Impact factor</option>
+      </select>
+    </label>
+    <label>Min score
+      <input id="min" type="range" min="0" max="1" step="0.01">
+      <span class="min-val" id="min-val"></span>
+    </label>
+  </div>
+  <div class="chips" id="sources" aria-label="Sources"></div>
+  <div class="chips" id="keywords" aria-label="Keywords"></div>
+  <div class="status">
+    <span id="count" aria-live="polite"></span>
+    <span>
+      <button class="linkish" id="export" hidden>Export starred</button>
+      <button class="linkish" id="reset" hidden>Clear filters</button>
+    </span>
+  </div>
+</div>
+
+<div class="papers" id="papers"></div>
+
+<footer id="footer"></footer>
+
+</div>
+
+<script id="data" type="application/json">{"date": "2026-10-05", "generated": "October 05, 2026", "days": 7, "sources": ["arxiv", "biorxiv", "pubmed"], "keywords": ["tumor evolution", "clonal evolution", "chromosomal instability", "CIN", "aneuploidy", "genomic instability", "digital pathology", "histopathology", "genomics", "cancer"], "threshold": 0.4, "total": 32, "papers": [{"id": "https://doi.org/10.1158/2159-8290.CD-25-2063", "title": "Immunologic Consequences of Genomic Instabilities.", "abstract": "Genomic instability manifests in two distinct ways based on DNA alteration scale, differentially affecting the tumor-immune microenvironment. Mutational instability involves excessive accumulation of small-scale alterations, such as substitutions and indels, from defective DNA repair or aberrant mutagenic processes, generating neoantigens and increased immunogenicity. Chromosomal instability encompasses large-scale alterations in which cells gain, lose, or rearrange chromosomes, resulting in aneuploidy and immune evasion through chronic innate activation and myeloid remodeling. This review outlines differences between mutational and chromosomal instability and discuss how their interplay shapes tumor immunogenicity and response to immunotherapy. Understanding these opposing mechanisms could inform immunotherapeutic approaches in cancer. Mutational and chromosomal alterations exert opposing effects on antitumor immunity. Hypermutated tumors can generate abundant neoantigens that prime adaptive immunity and sensitize tumors to checkpoint blockade. In contrast, chromosomal instability triggers chronic innate immune signaling that is paradoxically immunosuppressive, in part through myeloid cell and T-cell dysfunction. Integrating both processes into a unified framework could help uncover mechanisms of immune evasion and guide personalized immunotherapeutic strategies.", "authors": "Alouani E, Fumet JD, Johannet P, Marabelle A, Rousseau B", "date": "2026-Oct-01", "source": "PubMed", "journal": "Cancer discovery", "if": 29.7, "score": 0.7052, "score_semantic": 0.7052, "score_lexical": 1.0, "matched": ["chromosomal instability", "aneuploidy", "genomic instability", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.24.754285", "title": "Mutation Order and Selection Shape Intratumor Heterogeneity in Tumor Evolution", "abstract": "Cancer progression often requires the accumulation of multiple driver mutations, yet the same set of drivers may be acquired in different orders. How these alternative mutation-order pathways jointly shape tumor clonal structure remains unclear. We develop a multitype branching-process model in which malignant transformation requires two driver mutations and distinguish malignant cells both by their mutation order and by the independent transformation event that founded their clone. Under a successive exponential approximation, we establish point-process limits for the pathway-specific clone-size processes and derive a closed-form expression for the limiting expected Simpson's index of the combined malignant population. When the two mutation orders produce malignant cells with the same net growth rate, the limiting index separates into effective pathway weights, determined by mutation rates and birth-death dynamics at preceding stages, and within-pathway concentration terms, determined by intermediate-to-malignant growth-rate ratios. This decomposition shows that a driver's effect on heterogeneity depends critically on when it is acquired. A strong driver acquired early expands the intermediate lineage and increases the supply of independent malignant founders, whereas the same driver acquired at the final transition strengthens the growth and age advantage of early-founded malignant clones. Under additive fitness effects, these counteracting mechanisms can produce a non-monotone relationship between selective advantage and clonal concentration. We further show that threshold-like non-additive fitness effects can generate highly concentrated malignant populations, while order-dependent terminal fitness leads the faster-growing pathway to dominate asymptotically. Together, these results reveal how mutation order, mutational accessibility, selection, and epistasis jointly determine lineage-level intratumor heterogeneity.", "authors": "Chu, Y.; Sheng, X.; Zhang, X.; Wang, Z.", "date": "2026-09-28", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.684, "score_semantic": 0.684, "score_lexical": 0.6665, "matched": ["tumor evolution", "clonal evolution", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.1101/2025.03.17.643814", "title": "Reconstructing tumor evolution without chromosomal instability reveals in vivo determinants of therapeutic response", "abstract": "Tumor responses to therapy are profoundly shaped by selective pressures operating in vivo, including tumor-host interactions, tissue architecture, and endocrine signaling, yet most genome-scale approaches are conducted in vitro. We developed Stochastically Emergent Tumors (SETs), an in vivo platform that distills tumor evolution into sparse genetic variation amenable to computational inference and deep learning while uniquely avoiding chromosomal instability. Unlike single-perturbation screens, SETs evolve through combinatorial alterations, including neomorphic variants, across the entire genome. Applied to prostate cancer, SETs revealed how hormone therapy reshapes tumor evolution, identifying six unrecognized sensitization determinants, including ZFHX3 loss, together with resistance-associated alterations in CIC and KMT2D. Patient tumor analyses linked these potential biomarkers to clinical outcomes and nominated ZFHX3 as a target to push tumors into a luminal state. By decoupling tumor evolution from chromosomal instability, SETs harness in vivo therapeutic selection as a genome-scale discovery engine for determinants of both sensitivity and resistance.", "authors": "Moussavi-Baygi, R.; Ryan, M. J.; Sim, W.; Hoelscher, S. B.; Luga, V.; Chandrakumar, A. A.; Hoes, L.; Cha, J.; Lee, Y. S.; Herm, K.; Doron, B.; Bakke, D.; Wu, S.; Ding, C. K. C.; Stohr, B. A.; Jin, P.; Nadkarni, T.; Fang, X.; Haryono, M.; Nguyen, A.; Karthaus, W. R.; Sawyers, C.; Feng, F. Y.; Goodarzi, H.; Bose, R.", "date": "2026-09-30", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6806, "score_semantic": 0.6806, "score_lexical": 1.0, "matched": ["tumor evolution", "chromosomal instability", "cancer"]}, {"id": "http://arxiv.org/abs/2609.34280v1", "title": "MoSPR: Histology-to-Gene Expression Prediction with Morpho-Spatial Macrostates and Low-Rank Molecular Programs", "abstract": "Predicting molecular profiles from histopathology remains challenging because whole-slide images contain spatially organized, heterogeneous tissue patterns, while gene expression comprises thousands of correlated targets. We introduce MoSPR (Morpho-Spatial Program Regression), a linear framework that couples an adjacency-informed histology representation with a low-rank molecular basis. MoSPR clusters frozen patch embeddings into morphology microstates, aggregates their spatial adjacencies across the training cohort, and groups microstates with similar adjacency patterns into shared macrostates. Each slide is then represented by global morphology and macrostate-specific deviations, which are linearly mapped to coefficients of a training-derived low-rank gene-expression basis. Across three cancer cohorts from The Cancer Genome Atlas, MoSPR achieves the highest mean gene-expression prediction scores among all evaluated methods. Without pathway-level supervision, pathway scores derived from its predicted expression profiles rank first in eight of nine comparisons across three pathway collections. Ablation studies on the breast cancer cohort show complementary gains from adjacency-derived macrostate representation and low-rank molecular prediction. Moreover, with half of the training data on this cohort, MoSPR exceeds the full-data gene-prediction score of the strongest competing baseline. Finally, its linear formulation enables exact decomposition of each predicted expression profile into global and macrostate-specific molecular contributions, providing an interpretable link between spatially coherent macrostate regions and their associated molecular programs. Our code is available at https://github.com/Radisen-Panthera/MoSPR.", "authors": "Dongmyung Shin, Geongyu Lee, Yesung Cho, Park Jong Bae", "date": "2026-09-28", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.6777, "score_semantic": 0.6777, "score_lexical": 0.7269, "matched": ["histopathology", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.22.753313", "title": "Structural variation in repeat elements is widespread in normal human tissues and in tumorigenesis", "abstract": "Somatic mosaicism contributes to genomic variation, yet postzygotic structural variants remain under-characterized. We performed long- and short-read WGS from multiple individuals (n=47 normal tissues; n=168 samples) and identified mosaic structural variants in all individuals and germ layers, impacting a median 285.2 kb/genome. Nearly half of breakpoints were independently validated, with tissue distributions reflecting both early and late developmental origins. Most mosaic variants were repeat-mediated and 8.3% overlapped functional elements, an enrichment compared to germline variants. To extend these analyses in samples where long-read sequencing is infeasible, we measured repeat alterations from short-read sequencing, recapitulating mosaic tissue-specific differences. We characterized tumor- and tissue- specific variation in repeats across 15 cancer types and found tumor-related repeat variation to be similar in scale to that of normal mosaic variation. Tracking repeat changes in cell-free DNA provided a noninvasive approach for tumor monitoring. Our analyses revealed widespread repeat-driven structural variation in health and disease.", "authors": "Annapragada, A. V.; White, J.; Orjuela, H.; Bartolomucci, A.; Eastman, A.; Koul, S.; Lebarbenchon, K.; Bruhm, D.; Short, S.; Boyapati, K.; Niknafs, N.; Norton, C.; Girish, V.; Vulpescu, N.; Velculescu, S.; Velculescu, J.; Adleff, V.; Nelson, A.; Foda, Z.; Winterhoff, B.; Drapkin, R.; Schatz, M.; Phallen, J.; Scharpf, R.; Velculescu, V.", "date": "2026-09-28", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6641, "score_semantic": 0.6641, "score_lexical": 0.5015, "matched": ["cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.26.754526", "title": "Transcriptional networks underlying tumour plasticity in small-cell lung cancer", "abstract": "Across human malignancies, the ability of cancer cells to switch states (plasticity) drives progression, metastasis, and therapy resistance 1-3. Here we investigated the transcriptional and epigenetic basis of plasticity in small-cell lung cancer (SCLC), an aggressive, treatment-refractory cancer 4, 5. SCLC tumours display plasticity along a neuroendocrine (NE) to nonNE axis; however, the trajectories of lineage transition and the gene regulatory network underlying it, remain poorly defined 6. Using single-cell multi-omics, we resolved distinct transcriptional SCLC cell states, including a previously unrecognised Intermediate state comprised of low-identity immunogenic SCLC cells that serve as an obligatory route in NE to nonNE lineage transition. Using single-cell gene expression and chromatin accessibility data, we next developed a Boolean Bayes model for transcription factor networks (BoBa-T) to predict regulators of SCLC cell states. We validated RORB as a novel gatekeeper of the NE state that represses the nonNE identity in SCLC. RORB inactivation drives NE cells into the Intermediate state, upregulates immunogenic programs, and inhibits tumour growth in immunocompetent hosts. Our work identifies a plastic, immunogenic waypoint for SCLC lineage switching and reveals strategies to target it therapeutically.", "authors": "Bhattacharya, D.; Groves, S. M.; Walker, C.; Duorino, G. N.; Hsieh, M.; Chtourou, Y.; Hartmann, G. G.; Hsu, W.-H.; Liu, C.; Angelo, M.; Quaranta, V.; Sage, J.", "date": "2026-09-28", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6608, "score_semantic": 0.6608, "score_lexical": 0.8223, "matched": ["cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.29.755402", "title": "Novel Replication Stress-Associated High-Grade Serous Ovarian Cancer Models Recapitulate Diverse Tumour Ecosystems and Enable Preclinical Studies", "abstract": "Abstract Background: High-grade serous ovarian cancer (HGSC) is characterized by extensive genomic heterogeneity and frequent alterations that promote replication stress (RS). Although RS has emerged as a promising therapeutic vulnerability, it remains unclear whether distinct RS-associated genomic alterations generate similar tumour states or drive unique biological programs and therapeutic dependencies. Methods: We developed and characterized a panel of syngeneic HGSC models representing recurrent RS-associated alterations, including overexpression of Ccne1, Brd4, Myc, Ndrg1, Pik3ca, and Brca1 heterozygosity, alongside previously established Pten/Nf1-deficient and Myc overexpressing models. Tumour fitness, transcriptomic programs, histopathology, extracellular matrix composition, immune organization, and therapeutic vulnerabilities were assessed using subcutaneous (s.c.) and intraperitoneal (i.p.) allografts, RNA sequencing (RNAseq), mass spectrometry (MS), cyclic-immunofluorescence (Cyc-IF), and preclinical therapeutic studies. Results: RS-associated genotypes exhibited marked differences in tumour fitness and generated distinct tumour ecosystem states despite sharing a common genetic background. Tumours harbouring BRCA1 heterozygosity displayed reduced tumour fitness, mesenchymal features, extracellular matrix remodelling, stromal expansion, and immune-excluded phenotypes. In contrast, tumours co-expressing Ccne1 and Brd4 exhibited the highest RS level together with strong activation of DNA damage response pathways and limited immune infiltration. Immune characterization identified immune-desert, immune-suppressed, and immune-excluded states across models, demonstrating substantial genotype-dependent immune heterogeneity. Elevated CD47 expression emerged as a defining feature of the Ccne1/Brd4 tumour state and was confirmed in human HGSC specimens with high CCNE1 and BRD4 protein expression. Therapeutic targeting of ATR and CD47 in intraperitoneal Ccne1/Brd4 allografts reduced tumour burden and induced histopathological responses compared with either monotherapy alone, supporting the translational relevance of this RS-high tumour state. Conclusions: Distinct RS-associated alterations do not converge on a common HGSC phenotype but instead generate diverse tumour ecosystem states with unique effects on tumour fitness, stromal remodelling, immune organization, and therapeutic vulnerabilities. These findings highlight the importance of considering the genetic origin of RS when developing therapeutic strategies and establish a framework for investigating genotype-specific vulnerabilities in HGSC.", "authors": "Pourcel, V.; Drouin, Z.; Letourneau, E.; Gerber, Z.; Malkoun, K.-R.; Jean, D.; Placet, M.; Labrie, M.", "date": "2026-09-30", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6596, "score_semantic": 0.6596, "score_lexical": 0.5517, "matched": ["histopathology", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.1101/2025.01.29.635499", "title": "Hyper-mutational processes provide a head-start for weak cancer drivers: explaining atypical KRAS variants", "abstract": "Hypermutant cancers frequently contain atypical driver gene variants, which may provide sub-optimal oncogenic advantages. The reason why weak cancer drivers prevail and are not outcompeted by stronger alternatives is unclear. Here, using mathematical modelling, we show that aberrant mutational processes alone can account for the detection of weak, rather than canonical, driver mutations. We find that simply increasing the mutation rate per cell division, without altering selection or mutational biases, can lead to the dominance of weak drivers due to rapidly occurring further driver events. This effect can be further enhanced by mutational biases towards specific nucleotide sequence contexts. Focusing on POLE-mutant (DNA polymerase epsilon proofreading-deficient) colorectal cancers, we quantify the mutation bias for varied KRAS drivers under both POLE-mutant and non-hypermutant mutational processes. In POLE-mutant cancers, the combination of the bias coupled with an elevated mutation rate is sufficient to explain the enrichment of atypical KRAS drivers. Furthermore, model predictions are consistent with the observed prevalence of atypical KRAS drivers observed in mismatch repair deficient colorectal cancer. Thus, differential selection across these cancer types need not be invoked to explain the variation in driver mutations. Our study clarifies the interplay of mutation and selection during the evolutionary dynamics of tumourigenesis.", "authors": "Nicholson, M. D.; Tomlinson, I.", "date": "2026-09-30", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6573, "score_semantic": 0.6573, "score_lexical": 0.8088, "matched": ["cancer"]}, {"id": "https://doi.org/10.1186/s13073-026-01763-2", "title": "Uncovering pan-cancer signatures of chemoresistance.", "abstract": "Chemotherapy resistance remains a formidable challenge in cancer treatment, driving high mortality rates worldwide. Despite significant advancements, it remains unclear whether conserved molecular programs underpin therapy resistance across cancer types. Here, we integrate single-cell RNA sequencing, spatial transcriptomics, regulatory network modeling, transcription factor binding data, and pharmacologic perturbation across multiple cancer types to define a conserved, proliferative chemoresistant tumor state. Contrary to the prevailing notion that resistance arises from quiescent or EMT-like phenotypes, we find that resistant tumor cells display elevated G2/M and S-phase activity, enriched expression of E2F and MYC target genes, and activation of DNA repair and PI3K/AKT signaling pathways. We identify the transcription factor MYC as a central regulator of the resistant state, with progressive activation along the resistance trajectory and focal expression in resistant epithelial niches. A novel MYC target, SRM (Spermidine Synthase), emerges as a conserved effector of resistance, promoting polyamine biosynthesis critical for chromatin stability and metabolic resilience. SRM expression correlates with MYC binding and predicts poor patient survival. Functional validation in cell lines, patient-derived organoids and mouse models demonstrate that pharmacologic inhibition of MYC, SRM, or WNT signalling restores chemotherapy sensitivity, suppresses resistance-associated pathways, and reactivates apoptosis. Spatial and survival analyses confirm the clinical relevance of the MYC-SRM axis, establishing it as a druggable module in treatment-refractory cancers. To our knowledge, this is the first comprehensive study that redefines chemoresistance as a proliferative, MYC-driven state and uncover SRM as a tractable vulnerability, offering new avenues for therapeutic intervention across diverse epithelial malignancies.", "authors": "Inayatullah M, Demirdizen E, Keepers Z, Correia CM, Hashemi SM, Tripathi K, Sadhukhan S, Bardhan I, Mahesh A, Rassool FV, Terp MG, Shukla HD, Tiwari VK", "date": "2026-Sep-16", "source": "PubMed", "journal": "Genome medicine", "if": 10.4, "score": 0.6437, "score_semantic": 0.6437, "score_lexical": 0.7812, "matched": ["cancer"]}, {"id": "https://www.biorxiv.org/content/10.1101/2022.05.10.491431", "title": "RNA-sequencing as an expression-informed alternative for somatic variant detection and cancer driver identification", "abstract": "Detecting somatic mutations is a cornerstone of cancer genomics and clinical genotyping, traditionally relying on whole exome (WES) or whole genome sequencing (WGS) data. While RNA sequencing (RNA-seq) is primarily used to assess gene expression, it can also be utilized for somatic variant detection. RNA-seq inherently captures expressed variants, thereby reducing the identification of passenger mutations and mitigating the annotation biases associated with WES. We performed somatic variant calling and cancer driver detection from tumor RNA-seq data from 1,359 RNA-seq samples with matched WGS from the Pan-Cancer Analysis of Whole Genomes (PCAWG) Consortium of the International Cancer Genome Consortium (ICGC) and The Cancer Genome Atlas (TCGA). Our approach using RNA-seq data, alone, identified at least one putative driver gene in 15 of 16 cancer types, consistent with driver predictions from WGS. We further observed that the variant allele frequency (VAF) of RNA-seq-derived variants reflects their predicted functional impact, providing information specific to transcriptomic data. Because RNA-seq data can be generated and analyzed at lower computational cost and time than WGS or WES, it represents a resource-efficient alternative for cancer driver detection. This study provides an extensive pan-cancer resource of RNA-seq-derived variants from the PCAWG consortium and supports the utility of RNA-seq as a complementary approach for characterizing expressed somatic variation in cancer.", "authors": "Akutagawa, J.; Mak, A. J.; Damle, T.; Felton, C. A.; Aspden, J.; Brooks, A. N.", "date": "2026-09-30", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6421, "score_semantic": 0.6421, "score_lexical": 0.9459, "matched": ["genomics", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.29.754980", "title": "RNA splicing factor mutations drive myeloid neoplasm oncogenesis through protein complex poisoning", "abstract": "RNA splicing factor mutations (SFmut) are founding oncogenic events which cause RNA splicing errors with unpredictable gene expression dynamics. Despite extensive transcriptomic studies, SFmut cancer-initiating mechanisms remain elusive. Among SFmut cancers, myeloid neoplasms (MN) alone offer a setting where true cancer-driving SFmut stem cells can be identified, namely the hematopoietic stem cell (HSC). Within a cohort of 62 MN patients and 20 healthy donors, we conducted long/short-read single-cell transcriptomics (10X-ONT, n = 21) and immunophenotype-resolved low-cell proteomics (pauciproteomics, n = 78) to resolve gene expression, RNA splicing and protein expression dynamics across healthy and SFmut MN hematopoiesis. During hematopoietic differentiation, SFmut RNA mis-splicing decouples proteotranscriptomic dynamics in a mutation-specific manner. Pauciproteomics defines the functional effects of SFmut RNA mis-splicing on the protein layer, identifying early-stage protein effects which poison entire functional protein complexes and progressively disrupt the proteome-wide network during cellular maturation. Importantly, this information could neither be resolved nor predicted by transcriptomic analyses. Finally, we functionally validate the proteome dynamics of HSC through induced pluripotent stem cell culture models of early hematopoietic differentiation, identifying candidate mechanisms for SFmut oncogenesis. Overall, these data elucidate SFmut MN disease biology with unprecedented granularity, defining the molecular consequences of SFmut RNA mis-splicing and offering a generalizable framework for cancer stem cell studies.", "authors": "Moura, P. L.; Branca, R. M. M.; Kaminskiy, Y.; Siavelis, I.; Shrung, K. R.; Hofmann, S.; Perraki, C. M.; Argyriou, A.; Fazeli, S.; Nakagawa, M. M.; Mortera-Blanco, T.; Boettcher, S.; Kubaczka, C.; Schlaeger, T. M.; Creignou, M.; Barbosa, I.; Björklund, A.-C.; Hillberg Widfeldt, M.; Bosch, D.; Massaar, S.; Sanders, M.; Fagerström-Billai, F.; Rowe, G.; Woll, P. S.; Jacobsen, S. E. W.; Ungerstedt, J.; Nannya, Y.; Lundin, V.; Ogawa, S.; Lehtiö, J.; Hellström-Lindberg, E.", "date": "2026-09-30", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.623, "score_semantic": 0.623, "score_lexical": 0.7378, "matched": ["cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.28.754892", "title": "Gene-family-dependent thermodynamic effects of oncogenic mutations on nucleosome-DNA binding stability: a comparative molecular dynamics study across 22 cancer hotspots", "abstract": "Oncogenic mutations are known to occur at non-random rates and specific hotspots, yet the structural and thermodynamic factors underlying these hotspots remain poorly understood. This study presents molecular dynamics simulations of 22 cancer hotspots across 10 oncogene families, simulated as histone-DNA complexes. Across 18 of 22 mutations, thermodynamic effects were predominantly localized to within 6 [A] of the DNA-histone interface (mean capture 104%), with van der Waals interactions driving the effect at the thermodynamic extremes, indicating that oncogenic mutations alter nucleosome binding through precise local contact changes rather than global structural rearrangements. Further, analysis revealed a gene-family correlated pattern in thermodynamic stability. RAS family mutations showed a consistent trend toward nucleosome stabilization (mean {Delta}{Delta}G = -4.82 kcal mol-1), while kinase domain mutations trended toward destabilization (mean {Delta}{Delta}G = +40.12 kcal mol-1), a difference reaching statistical significance in this exploratory analysis (Mann-Whitney U, p = 0.008). This interface-specific mechanism, combined with the gene-family-correlated thermodynamic pattern, provides a biophysical framework for understanding nucleosome-level contributions to cancer hotspot mutation biology.", "authors": "Freudenberger, S.; Boczko, E.; Goel, S.; Maitra, R.", "date": "2026-09-30", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6215, "score_semantic": 0.6215, "score_lexical": 0.7599, "matched": ["cancer"]}, {"id": "https://doi.org/10.1038/s41467-026-77335-0", "title": "The Fanconi anemia pathway restrains MLL-rearranged leukemogenesis through suppressing non-homologous end joining-mediated genomic instability.", "abstract": "Mixed lineage leukemia (MLL) rearrangements drive approximately 10% of acute leukemias, including acute myeloid leukemia (AML) and acute lymphoblastic leukemia (ALL). Individuals with Fanconi anemia (FA), a hereditary DNA damage repair (DDR) disorder, are at markedly increased risk of AML, yet the interplay between FA deficiency and MLL-rearranged (MLL-r) leukemia remains unclear. Using murine models and human MLL-r leukemia cells, we show that the FA pathway suppresses leukemogenesis by limiting error-prone non-homologous end joining (NHEJ)-mediated genomic instability. Loss of FA components accelerates leukemia development, promotes leukemic stem cell expansion, and increases DNA damage through hyperactive NHEJ. Pharmacological NHEJ inhibition selectively impairs the survival of FA-deficient MLL-r leukemia cells, revealing a synthetic lethal vulnerability. Consistent with these findings, reduced FA pathway gene expression in patient samples correlates with poor prognosis and increased sensitivity to NHEJ inhibition. These findings identify NHEJ blockade as a promising targeted therapeutic strategy for high-risk MLL-r leukemia.", "authors": "Xu J, Sund LM, Wolff EV, Zhu AZ, Wang R, Gao Z, Ito S, Du W", "date": "2026-Sep-01", "source": "PubMed", "journal": "Nature communications", "if": 14.7, "score": 0.6125, "score_semantic": 0.6125, "score_lexical": 0.9972, "matched": ["genomic instability"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.23.753695", "title": "Genomic correlates of metastatic competence and progression in human melanoma", "abstract": "Genomic events and their timing that grant a primary tumour the competence to disseminate remain poorly defined. We performed sequencing of 247 stage I/II primary cutaneous melanomas (CMs) and 60 matched metastases without intervening therapy from a prospectively followed registry cohort with a median followup of 92 months, integrating copy-number, mutational, protein and spatial-transcriptomic analyses. Relapse was not distinguished by oncogenic point mutations, which were largely shared between primaries and metastases, but by somatic copy-number alterations (SCNAs) and global chromosomal instability. We defined OncoCycle, a six-gene copy-number signature (amplification of CDK4, MCL1 and CD276; biallelic loss of CDKN2A, CDKN2B and TP53BP1) that predicted relapse independently of established clinicopathological features in melanoma, and a pan-cancer analysis. In matched pairs, metastatic progression was driven by continued copy-number evolution and reduction in intra-tumoural heterogeneity, rather than by acquired point mutations, and OncoCycle alterations from primary tumours were preserved in metastasis seeding clones. Clonal reconstruction revealed both monoclonal and polyclonal metastasis seeding, and spatial transcriptomics resolved copy-number-defined metastatic subclones occupying and programming distinct immune and stromal niches. Thus, metastatic competence was primed early by focal SCNAs on a background of chromosomal instability, elaborated by continued copy-number evolution during dissemination and spatio-temporal interactions with the tumour-microenvironment.", "authors": "Chatziioannou, E.; Luthria, K.; Shah, P.; Armeanu-Ebinger, S.; Admard, J.; Schroeder, C.; Forchhammer, S.; Stihler, F.; Zhang, X.; Maiche, S.; Mankel, A. B.; Stadelmaier, J.; Amaral, T.; Leiter, U.; Maczey, E.; Mattern, S.; Bonzheim, I.; Fend, F.; Garbe, C.; Heneka, Y.; Krauss, M.; Pop, O. T.; Schreieder, L.; Haferkamp, S.; Stratigos, A. J.; Schuerch, C. M.; Ossowski, S.; Martus, P.; Nahnsen, S.; Sinnberg, T.; Flatz, L.; Riess, O.; Izar, B.; Roecken, M.", "date": "2026-09-29", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6105, "score_semantic": 0.6105, "score_lexical": 0.9346, "matched": ["clonal evolution", "chromosomal instability", "genomic instability", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.23.753832", "title": "Complete timing of copy-number amplification histories reveals whole-genome duplication dynamics and coincident oncogene amplification bursts", "abstract": "Copy-number amplifications drive cancer evolution through increased oncogene dosage. Mutations acquired before a gain are co-amplified, so their multiplicity places successive gains on a molecular timescale. This principle has been used to time individual gains and whole-genome duplication (WGD), but possible gain histories multiply rapidly with copy number, confining existing methods to low copy-number states or predefined scenarios and leaving oncogene-bearing amplifications unresolved. Here we describe a mathematical framework to systematically enumerate every allele-specific gain route to a copy-number state and derive an analytical timing for each gain, implemented in a method called Tau. Across pan-cancer genomes, punctuated multichromosomal events account for roughly three-quarters of clonal gains. Most are WGD, acquired early and often repeated within a doubling-prone subset, but a distinct, predominantly monoallelic class recurs on tumor-type-specific chromosomes, representing a coordinated mode separate from doubling. Strikingly, the highest copy-number states are reached not gradually but in abrupt bursts that cluster around WGD and contain more gains than doubling alone can produce, recurring at oncogenes. WGD is therefore not a passive doubling but a window in which localized oncogene amplification becomes far more frequent. By resolving the order of gains and the mutational processes shifting between them, Tau establishes punctuated amplification as a pervasive mode of cancer genome evolution.", "authors": "Gulhan, D. C.; Brew, J.; Park, P. J.", "date": "2026-09-29", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6086, "score_semantic": 0.6086, "score_lexical": 0.7334, "matched": ["tumor evolution", "clonal evolution", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.24.753585", "title": "Provisional extracellular matrix signaling network regulates tumor lymphoneogenesis and response to immunotherapy", "abstract": "Tertiary lymphoid structures (TLS) predict response to checkpoint inhibition, and conventional dendritic cells (cDC) are required to build and maintain them. What renders a niche permissive for their assembly is unknown: chemokines recruit the cellular constituents but do not specify how they organize. Here we show that the organizing signal is a matrix fragment. Proteolysis of the proteoglycan versican (VCAN) releases the matrikine versikine, constitutively in germinal center light zones and inducibly in tumor stroma. Versikine activates CD11b+ cDC and expands cDC1 to assemble TLS-archetypal triads, apposed DC: CD4+ T: CD8+ T units. Versikine-conditioned DC engage progenitor-exhausted CD8+ T cells (Tpex) and Th1-polarized follicular helper CD4+ T cells. Excess unproteolyzed VCAN inverts this toward DC-Treg crosstalk and Tpex loss. Versikine supplied as mRNA or recombinant protein sensitizes refractory tumors to PD-L1 blockade. VCAN proteolysis prospectively predicted outcomes after PD-1 blockade in metastatic colorectal cancer. Matrikines organize chemokine-recruited cells into functional immune niches.", "authors": "Lagal, D. J.; Hong, D.; Papadas, A.; Yacu, G. S.; Geatches, E.; Leschinsky, N.; Huang, Y.; Dou, Y.; Fields, M.; Gibbons, A.; Molina, E.; Pestonjamasp, K.; Toth, P. T.; Cicala, A.; Mamede, J.; Schneider, J.; Matkowskyj, K.; Deming, D. A.; Naik, S.; Asimakopoulos, F. A.", "date": "2026-09-29", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.6086, "score_semantic": 0.6086, "score_lexical": 0.5077, "matched": ["cancer"]}, {"id": "https://doi.org/10.1158/0008-5472.CAN-26-1087", "title": "ScanTCR Enables Early Cancer Detection by Repertoire-Scale Representation of Cancer-Associated T-Cell Receptors in Peripheral Blood.", "abstract": "T cells initiate anticancer immune responses at an early stage of tumorigenesis, thus enabling dynamic monitoring of peripheral blood T-cell receptor (TCR) repertoire changes as a promising strategy for early cancer detection. However, current TCR-based cancer detection methods focus on limited high-frequency TCRs instead of repertoire-scale representation, overlooking numerous crucial cancer-associated TCRs (caTCRs). Herein, we developed ScanTCR, a computational framework for early cancer detection that introduces a reference-guided repertoire-scale encoding method capable of incorporating all TCRs. ScanTCR exhibited remarkable precision in distinguishing cancer patients from non-cancer individuals using peripheral blood TCR. In a pan-cancer analysis encompassing seven cancer types, ScanTCR demonstrated robust performance in detecting both cancer types included in the training data and unseen cancer types, surpassing state-of-the-art TCR-based methods. Furthermore, ScanTCR identified caTCRs whose corresponding T cells exhibit enhanced cellular immune capacity. Collectively, this work proposes a TCR-based approach enabling repertoire-scale representation of immune receptors for noninvasive early cancer detection.", "authors": "Zhang J, Cai Y, Que J, Wang Z, Ma J, Wang Y, Jin X, Yang W, Luo M, Wei Z, Xue G, Yang R, Pang F, Hui Y, Zhou W, Tan R, Wang P, Sun H, Xu Z, Jiang Q", "date": "2026-Oct-02", "source": "PubMed", "journal": "Cancer research", "if": 11.2, "score": 0.6068, "score_semantic": 0.6068, "score_lexical": 0.9914, "matched": ["cancer"]}, {"id": "https://doi.org/10.1016/j.cell.2026.09.012", "title": "Spatial evolution of a cachexia-promoting microenvironment in pancreatic cancer.", "abstract": "Cachexia is a major cause of morbidity in pancreatic cancer, but the cellular circuitry linking tumor progression to systemic wasting remains incompletely understood. Integrating single-cell RNA sequencing, Xenium spatial transcriptomics, multiplex immunohistochemistry, bulk transcriptomics, and functional studies across human non-cachexia, pre-cachexia, and cachexia samples, together with mouse models, we define a cachexia-associated microenvironmental niche composed of SEMA4A+ tumor cells, AQP9+ macrophages, and LOXL2+ cancer-associated fibroblasts. Mechanistically, SEMA4A-associated signaling promotes bone morphogenetic protein-2 (BMP2)-dependent acquisition of an AQP9-associated macrophage phenotype, and macrophage-derived CXCL8 activates LOXL2+ fibroblasts. LOXL2+ fibroblasts reciprocally enhance tumor cell FOSL1/SEMA4A signaling through exosomal N-glycosylated LOXL2. Spatial analyses demonstrate progressive enrichment of this niche with cachexia severity and association with postoperative development of cachexia in previously non-cachectic patients. These findings provide a framework linking local tumor ecosystem dynamics to cachexia progression.", "authors": "Hu Y, Lv G, Yuan H, Zhou Z, Zhang S, Ye Y, Chen Q, Cai Y, Yang J, Zhang Y, Xu C, Luo W, Bronze MS, Houchen CW, Li YP, Xu J, Zhang Y, Liu M, Li M", "date": "2026-Sep-29", "source": "PubMed", "journal": "Cell", "if": 45.5, "score": 0.5618, "score_semantic": 0.5618, "score_lexical": 0.8002, "matched": ["tumor evolution", "cancer"]}, {"id": "http://arxiv.org/abs/2609.38705v1", "title": "SCALE: Synthetic Calibration via Agreement Labeling in Embedding Space", "abstract": "Foundation models for computational pathology are usually evaluated using AUC and accuracy, while calibration is often left untested. This matters because a model can be accurate on average but still assign overly confident probabilities to cases that are difficult even for pathologists. We study calibration across eight pathology foundation models. Using pathologist agreement as a measure of diagnostic difficulty, we find that calibration error is consistently higher on low-agreement cases than on high-agreement cases. This pattern is not apparent from aggregate expected calibration error (ECE) alone. We then propose synthetic agreement calibration, a method for improving calibration without collecting multi-annotator labels. Given a trained linear probe, we select high-confidence embeddings as class anchors and interpolate between anchors from opposite classes. The interpolation weights encode a continuous notion of diagnostic ambiguity, which we use as a synthetic agreement signal to retrain the probe with agreement-aware label smoothing. On MHIST, which includes annotations from seven pathologists, synthetic agreement calibration recovers most of the calibration improvement obtained by label smoothing based on real pathologist agreement, while substantially reducing low-agreement ECE relative to the uncalibrated baseline. Discrimination metrics are preserved. On PatchCamelyon and BreakHis, public histopathology datasets without multi-annotator labels, the method improves calibration across the evaluated foundation models, whereas annotator-dependent approaches cannot be used without additional expert annotation.", "authors": "Wenjun Liu, Saeed Hassanpour", "date": "2026-09-30", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.5546, "score_semantic": 0.5546, "score_lexical": 0.6647, "matched": ["histopathology"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.25.754527", "title": "Remodeling of cholesterol metabolism in melanoma progression regulates nuclear membrane mechanics.", "abstract": "Metastatic cancer cells migrate through physically restrictive environments where nuclear deformation ruptures the nuclear envelope (NE) resulting in genomic instability. Although structural proteins of the NE are established regulators of nuclear mechanics, how nuclear membrane (NM) lipid composition contributes to its biophysical response to mechanical stress remains poorly understood. Here, we show that melanoma progression is associated with broad transcriptional remodeling of cholesterol homeostasis that is established early in disease progression, with altered expression of cholesterol biosynthesis genes associated with reduced patient survival. Building on our previous identification of the inner NM sterol reductase lamin B receptor (LBR) as a regulator of NE fragility, we find that LBR-dependent cholesterol biosynthesis promotes cholesterol enrichment within the NM and alters its spatial organization during cellular confinement. Quantitative fluorescence and lifetime imaging of biosensors of cholesterol distribution, lipid order, and tension reveals that cholesterol remodeling alters NM lipid organization and results in high NM tension in melanoma cells that is selectively reduced by cholesterol depletion. Cellular confinement generates nuclear blebs where cholesterol becomes preferentially enriched at highly curved, rupture-prone regions of the NM. Together, our results establish cholesterol-dependent NM remodeling as a regulator of nuclear mechanics and link metabolic changes acquired during cancer progression to the biophysical response of the NM to mechanical stress.", "authors": "Baird, M. A.; Malide, D. A.; Combs, C. A.; Fischer, R. S.; Waterman, C. M.", "date": "2026-09-28", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.5325, "score_semantic": 0.5325, "score_lexical": 0.665, "matched": ["genomic instability", "cancer"]}, {"id": "http://arxiv.org/abs/2610.03693v1", "title": "Transcriptome-informed multi-modal AI for predicting neoadjuvant therapy response from breast cancer biopsies", "abstract": "Scarcity of labeled data limits development of deep learning biomarkers in oncology. We develop a two-stage AI model predicting pathological complete response (pCR) to neoadjuvant therapy in breast cancer. The first stage learns the transcriptome from histopathology using 8,742 patients across 32 cancer types, corroborated by pathologist review and spatial agreement with measured expression. This simplifies the second stage to predicting pCR from inferred expression and clinical variables. Developed using 1,080 patients (five cohorts) and evaluated in 1,412 patients (nine cohorts), the model achieves a pooled AUROC of 0.79 (95% CI, 0.73-0.85), discriminating responders within molecular subtypes. It outperforms histopathological biomarkers, remaining stable across intratumoral sampling and with minimal biopsy tissue. Ablations show transcriptome-wide inference improves discrimination over clinical variables alone or one-stage pathology models, and robustness by avoiding genomic assays' gene selection constraints. These results indicate that biologically informed compression may generalize to data-sparse applications in precision oncology.", "authors": "Jungkyu Park, Dhruva Biswas, Joseph Cappadona, Cerise Tang, Ken G. Zeng, Bartosz Machura, Chuwen Liu, Paolo Tarantino, Coral Omene, Francisco J. Esteva, Rohit Bhargava, Marcin Braun, Kamila Paździerz, Jakub Czerwiński, Hanna Romańska-Knight, Albert Grinshpun, Bareket Daniel, Michele Buchinger, Frederick Howard, Piotr Wysocki, Brie Chun, Freya Schnabel, Rich Caruana, Jan Witowski, Krzysztof J. Geras", "date": "2026-10-02", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.5316, "score_semantic": 0.5316, "score_lexical": 0.7841, "matched": ["histopathology", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.21.753357", "title": "MDM2 P1/P2 promoter usage separates autonomously proliferative and environment-adaptive, gastric-metaplastic programs in colorectal cancer", "abstract": "Background: Biopsy-measurable biomarkers that stratify colorectal cancer (CRC) by therapeutic responsiveness remain scarce. We asked whether dual MDM2 promoter (P1/P2) usage acts as a molecular switch separating two opposed CRC phenotypes: a chromosomal instability type and an environment-adaptive type (microsatellite instability-like/serrated pathway with gastric metaplasia). Methods: Sixty three organoid samples from 22 CRC patients were classified by deep-learning morphology (VGG16) and an array based MDM2 Splicing Index. P1 and P2 signatures were evaluated in TCGA-COAD/READ (n = 624) and GSE39582 (n = 519), and drug responses were examined in cell lines (GDSC2, DepMap) and 65 independent CRC organoid lines. Statistics used Wilcoxon, Kruskal Wallis and Spearman tests (Benjamini Hochberg-corrected) and patient-level mixed models. Results: Deep earning classification reached 98.5% test accuracy; morphology corresponded to isoform usage: Type1 (compact glandular) morphology predominated in P1-dominant samples (median Type1 fraction 0.826 versus", "authors": "Tsukui, T.; Shin, K.; Tsuda, K.; Yao, R.", "date": "2026-09-29", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.5248, "score_semantic": 0.5248, "score_lexical": 0.696, "matched": ["chromosomal instability", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.30.755763", "title": "Genome-wide mapping of endogenous topoisomerase cleavage complexes reveals TOP1 at the interface of DNA topological regulation and genome instability", "abstract": "Topoisomerase cleavage complexes (TOPcc) are covalent protein-DNA intermediates formed transiently during topoisomerase catalysis and constitute a major class of DNA-protein crosslinks in human cells, yet their endogenous genomic distributions remain difficult to resolve. Here, we developed protein-DNA adduct immunoprecipitation followed by sequencing (pDAIP-seq), a highly sensitive method for detecting endogenous TOPcc that enables their genome-wide profiling under normal physiological conditions without stabilization by topoisomerase poisons. Using pDAIP-seq, we found that camptothecin treatment, required by existing TOP1cc profiling methods, not only increased TOP1cc abundance but also substantially altered its genomic distribution. Endogenous TOP1cc were globally reduced upon transcriptional suppression and increased upon TOP2A depletion, supporting TOP1cc regulation by the maintenance of genome-wide DNA topological homeostasis. Interestingly, both the regional distribution and nucleotide-scale positioning of TOP1cc, including the positions of TOP1 catalytic cleavage sites, were largely specified by local DNA sequence context. By extending pDAIP-seq to capture transient covalent protein-DNA intermediates involved in DNA repair, including TDP1-, PARP1-, and KU70-DNA adducts, we further identified endogenous TOP1cc as a potential major source of spontaneous DNA breaks in human cells. Finally, pDAIP-seq also enabled genome-wide mapping of TOP2cc, TOP3cc, and SPO11-DNA covalent intermediates in mouse testis undergoing programmed meiotic DNA cleavage. Together, these findings establish pDAIP-seq as a broadly applicable method for the mapping of covalent protein-DNA intermediates and reveal endogenous TOP1cc as a key intermediate between DNA topological regulation and human genome instability.", "authors": "Li, S.; Chen, C.", "date": "2026-10-02", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.4998, "score_semantic": 0.4998, "score_lexical": 0.8871, "matched": ["genomic instability"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.27.754858", "title": "TET loss of function selects for aneuploidies that confer a proliferative advantage", "abstract": "Mutations in the Ten-Eleven Translocation (TET) family of DNA dioxygenases are among the most common epigenetic alterations in clonal hematopoiesis and hematologic malignancies, yet how TET loss of function reshapes genome evolution during cellular expansion remains to be fully understood. Here we show that loss of Tet2/3 in invariant natural killer T (iNKT) cells drives aggressive lymphoid expansion that is consistently associated with recurrent chromosome 17 trisomy, a dominant aneuploid state observed across more than ten independently derived tumors following transplantation into immunocompetent recipient mice. Single-cell whole-genome sequencing of TET-deficient iNKT cells induced to proliferate in culture with antigen and IL-2 stimulation revealed that rare pre-existing cells with chromosome 17 trisomy appeared soon after Tet gene deletion in the thymus, together with cells harboring other copy number alterations, but only the cells with chromosome 17 trisomy were progressively enriched during further expansion. Similarly, inducibly Tet-deficient mouse embryonic stem cells (mESCs) showed selection for aneuploid states that were present prior to Tet gene deletion, including trisomy of chromosome 6. Reanalysis of independent datasets from Dnmt3a-deficient mouse lymphomas identified recurrent chromosome gains, including chromosome 17 trisomy. Our results establish TET and DNMT3A deficiency as drivers of karyotypic evolution, and suggest that disruption of DNA methylation/ demethylation pathways through either TET or DNMT3A deletion promotes chromosomal instability, in part by facilitating the emergence and selection of cryptic aneuploid subclones during clonal expansion.", "authors": "Lopez-Moyado, I. F.; Suzuki, K.; Hernandez-Espinosa, L.; Li, X.; Koot, D.; Wardenaar, R.; Foijer, F.; Rao, A.", "date": "2026-10-01", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.4956, "score_semantic": 0.4956, "score_lexical": 1.0, "matched": ["clonal evolution", "chromosomal instability"]}, {"id": "https://www.medrxiv.org/content/10.64898/2026.09.24.26363902", "title": "Exponentially weighted ensemble deep learning for histologic growth pattern classification in lung adenocarcinoma", "abstract": "Accurate classification of lung adenocarcinoma growth patterns from hematoxylin and eosin (H&E)-stained whole-slide images is essential for treatment planning and prognosis. We develop and evaluate an exponentially weighted ensemble deep learning approach that combines five architectures (EfficientNet-B3, DeiT3, Swin Transformer, Vision Transformer, ConvNeXt) with weights determined by a softmax transformation of per-model Quadratic Weighted Kappa (QWK) scores. Using 25,545 image patches at 40x magnification from the Dartmouth-Hitchcock dataset, we evaluated performance with stratified 5-fold cross-validation. Individual model performance ranged from Cohens kappa{kappa} = 0.5563 (Con-vNeXt) to{kappa} = 0.9561 (EfficientNet-B3). The ensemble achieved 96.52% accuracy and{kappa} = 0.9648, exceeding the best individual model by {Delta}{kappa} = +0.0087 with statistical significance (McNemars test,{chi} 2 = 50.84, p < 10-12; bootstrap 95% CI on {Delta}{kappa} [+0.0056, +0.0117]). Pairwise disagreement rates of 16.6-43.2% between architectures indicate that the models capture different aspects of tissue morphology, and the framework automatically down-weights unreliable components, as illustrated by ConvNeXt receiving only 5.7% ensemble weight despite a single-fold training failure. The approach offers a clinically grounded method for ensemble aggregation in digital pathology.", "authors": "Korutla, R.; Jain, M. N.; Karkera, T. M.; Tunik, G.; Ryan, S. T.; Christman, R. A.; Amal, S.", "date": "2026-09-28", "source": "medrxiv", "journal": "preprint", "if": null, "score": 0.4925, "score_semantic": 0.4925, "score_lexical": 0.8747, "matched": ["digital pathology"]}, {"id": "http://arxiv.org/abs/2609.38419v1", "title": "Colorectal Cancer Segmentation with Adaptive Augmentation and Multi-Resolution Ensemble Models", "abstract": "Colorectal cancer (CRC) is the second most deadly and third most common cancer, and the leading cause of death among gastrointestinal cancers. Early diagnosis is crucial for the treatment of this cancer and increasing the survival rates. Although CRC is more common in developed regions, its occurrence is also increasing in developing regions as well. CRC diagnosis relies on histopathology assessment post-biopsy. Automated deep learning algorithms can significantly reduce diagnosis time, enhancing efficiency and supporting timely clinical decisions.   We present an automated segmentation pipeline for whole-slide histopathology images that labels tumor grades 1-3 and normal mucosa. It utilizes dense prediction transformers with various encoder backbones, overlapping patches, and test-time augmentation. An adaptive augmentation policy, guided by large language models, further improves training. Top models were ensembled via soft voting, and mask refining post-processing steps, Gaussian blurring, morphological closing, and connected components analysis. On a colorectal cancer grade dataset, our method improved the F1 score from 62.92 to 69.84. Code is available here: github.com/caglarmert/ICIP2025", "authors": "Ümit Mert Çağlar, Alptekin Temizel", "date": "2026-09-29", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.4813, "score_semantic": 0.4813, "score_lexical": 1.0, "matched": ["histopathology", "cancer"]}, {"id": "https://doi.org/10.1186/s12943-026-02771-x", "title": "Artificial intelligence in oncology: linking biological discovery to clinical utility.", "abstract": "Artificial intelligence (AI) has expanded rapidly across the oncology continuum-spanning early detection, histopathology, molecular profiling, treatment selection, drug discovery, toxicity surveillance, and survivorship care. However, these varied applications occupy fundamentally different stages of clinical and biological translation. We conducted a critical narrative review searching PubMed/MEDLINE, Europe PMC, IEEE Xplore, arXiv, and ClinicalTrials.gov (updated to July 21, 2026). From these sources, an evidence map of 202 publications (including 182 original studies) was assembled based on study design, prospective or external validation, mechanistic rigor, clinical utility, and representation across the cancer continuum. The primary synthesis demonstrates evidence gradient rather than uniform translation across oncology: Detection & Imaging: Select mammography and colonoscopy tools are supported by randomized controlled trials demonstrating workflow efficiency and detection gains. Conversely, negative pragmatic trials highlight that robust technical accuracy does not automatically translate into improved diagnostic pathways. Large self-supervised and vision-language foundational models exhibit strong cross-task and cross-institutional transferability. However, prospective real-world deployment remains rare, and reporting on calibration, subgroup performance, and data provenance is inconsistent. Molecular & Systems Biology: Multi-omics, single-cell, spatial transcriptomics, graph-based, and perturbation models increasingly yield falsifiable hypotheses regarding tumor microenvironments, regulatory networks, and drug vulnerabilities; most, however, lack upstream functional validation. Therapeutic Decision Support: Applications in treatment response, surgical assistance, toxicity monitoring, and clinical large language models (LLMs) remain limited by cohort heterogeneity, temporal drift, unstandardized endpoints, and a lack of evidence that model-guided care alters patient outcomes. AI applications must be evaluated using evidence matched directly to their specific clinical or biological claims: external validation for transportability, calibration/decision analysis for utility, prospective workflow studies for operational value, randomized trials for patient outcome benefits, and perturbation experiments for biological mechanism. This claim-matched framework clarifies the boundary between promising computational models and clinically or mechanistically credible oncology, establishing a roadmap for reliable integration into precision cancer care.", "authors": "Kuchana SK, Alahari NV, Kode R, Jalapu KR, Alahari SK", "date": "2026-Aug-22", "source": "PubMed", "journal": "Molecular cancer", "if": 27.7, "score": 0.4709, "score_semantic": 0.4709, "score_lexical": 0.5689, "matched": ["histopathology", "cancer"]}, {"id": "https://doi.org/10.1186/s12943-026-02789-1", "title": "Extrachromosomal DNA as a platform for epigenetic reprogramming in cancer.", "abstract": "Extrachromosomal DNA (ecDNA) has emerged as a major contributor to cancer aggressiveness, yet its role extends far beyond its classical definition as a vehicle for oncogene amplification. Recent studies indicate that ecDNA functions as a dynamic regulatory platform that reshapes chromatin accessibility, enhancer activity, three-dimensional genome organization, nuclear architecture, and transcriptional output. Through these properties, ecDNA enables cancer cells to amplify oncogenic signaling, generate transcriptional plasticity, and rapidly adapt to selective pressures. In contrast to chromosomal amplification, ecDNA is structurally independent, frequently circular, acentromeric, and inherited through noncanonical mitotic behaviors, allowing unequal segregation, coordinated co-inheritance, and persistent propagation of advantageous regulatory states. Emerging evidence further shows that ecDNA can hijack pre-existing enhancers, rewire enhancer-oncogene communication, activate noncanonical regulatory elements, and assemble into transcriptionally active nuclear hubs and condensate-associated structures, thereby transforming genome rearrangement into epigenetic innovation. These mechanisms position ecDNA as a key driver of intratumoral heterogeneity, clonal evolution, metastatic adaptation, and therapeutic resistance. At the same time, the high transcriptional burden and specialized regulatory architecture of ecDNA-positive tumors may create selective vulnerabilities, including transcription-replication conflict and dependence on ecDNA-associated hubs, condensates, and regulatory modules. In this review, we synthesize current advances in the formation, regulation, inheritance, and functional consequences of ecDNA, with a particular focus on its emerging role as a platform for epigenetic reprogramming in cancer. We also discuss how this conceptual shift from copy-number biology to regulatory biology may redefine ecDNA as both a mechanistic framework for tumor plasticity and a potential frontier for precision oncology.", "authors": "Liu BX, Zhou L, Lai S, Han X, Dai XJ, Liu R, Wang Y, Chen D, Wei J, Hu H, Zu W, Jiang L, Chang J, Zha L", "date": "2026-Sep-17", "source": "PubMed", "journal": "Molecular cancer", "if": 27.7, "score": 0.4631, "score_semantic": 0.4631, "score_lexical": 0.7794, "matched": ["tumor evolution", "clonal evolution", "cancer"]}, {"id": "https://www.biorxiv.org/content/10.64898/2026.09.24.754188", "title": "Combined Loss of VHL and TSC1 Drives Clear Cell Renal Cell Carcinoma with Metabolic and Redox Reprogramming that Creates an NRF2 Dependency", "abstract": "Cancer genomics studies have implicated combined loss of VHL and TSC1 as sufficient to initiate clear cell renal cell carcinoma (ccRCC) in humans. Here, we engineered a mouse model with kidney-specific deletion of Vhl and Tsc1. VhlF/FTsc1F/FKsp-Cre+ mice developed multifocal renal cell carcinomas starting at 7 weeks of age with 100% penetrance, and the resulting Vhl-/-Tsc1-/- tumors recapitulated the histopathology of human VHL-/-TSC1-/- ccRCC. Integrated transcriptomic and metabolomic analyses of 4-week-old preneoplastic renal cortices deficient for Vhl and Tsc1 demonstrated heightened HIF and mTORC1 signaling and unexpectedly revealed activation of an antioxidant response regulated by NRF2 (NFE2L2). Biochemical, cell biological, multi-omic, and xenograft studies identified an NRF2 dependency in human VHL-/-TSC1-/- ccRCC cells. Altogether, we report a mouse model that recapitulates human VHL-/-TSC1-/- ccRCC, delineate metabolic and redox reprogramming driven by unrestrained HIF and mTORC1 activation in the renal cortex, and identify NRF2 as a potential therapeutic vulnerability.", "authors": "Xu, J.; Cheng, X.; Aboud, O. A.; Chen, Y.; Bialik, A.; Reznik, E.; Oyama, T.; Tickoo, S.; Weiss, R. H.; Cheng, E. H.; Hsieh, J. J.", "date": "2026-09-28", "source": "biorxiv", "journal": "preprint", "if": null, "score": 0.4588, "score_semantic": 0.4588, "score_lexical": 0.7333, "matched": ["histopathology", "genomics", "cancer"]}, {"id": "http://arxiv.org/abs/2609.35203v1", "title": "From UNI2-h to ConvNeXt-T: Lightweight Nuclei Instance Segmentation via Knowledge Distillation", "abstract": "Nuclei instance segmentation is a core task in digital pathology, yet high-accuracy models rely on large vision transformer (ViT) encoders whose inference speed cannot meet real-time clinical demands. We propose a lightweight scheme that distills the UNI2-h pathology foundation model into a ConvNeXt-Tiny student (Ours-T, 34.7M parameters, 1/20 of the teacher) via output-level knowledge distillation. Ours-T achieves an mPQ of 0.519 on PanNuke (98.8% of the teacher), a zero-shot bPQ of 0.668 on MoNuSeg, and an inference speed of 634.3 img/s, requiring only 0.045 s for full-resolution 1024^2 analysis (21.8x speedup). Experiments further show that multi-scale gated convolution (MALA) yields no gain under ViT encoders, and output-level distillation alone suffices for efficient knowledge transfer.", "authors": "Wenyan Li", "date": "2026-09-28", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.4535, "score_semantic": 0.4535, "score_lexical": 1.0, "matched": ["digital pathology"]}, {"id": "http://arxiv.org/abs/2609.36158v1", "title": "Voronoi-Markov chain and spatial entropy for point pattern analysis", "abstract": "In this paper, we revisit the concept of entropy in the spatial context with the aim of deriving computable and interpretable metrics for point pattern analysis in domains such as histopathology. We discuss stochastic point process assumptions like Poisson homogeneity and Simple Sequential Inhibition (SSI) and review established results for Voronoi and Delaunay tilings of point sets for their potential to provide null distributions for rigorous empirical hypothesis testing. We present (1) a novel \"dense basin entropy\" defined in terms of the Ord distribution supported on Voronoi basins, which is shown to be sensitive to clustering, and (2) a related Markov chain designed as a simplification or approximation of Brownian motion in the underlying planar domain. We investigate bounds on the dense basin entropy in the SSI regime and in empirical data, and show that the entropy rate and spectral gap of the Markov chain lead to sharp discrimination metrics. Finally, we demonstrate a generalization to multiple-set analysis via aggregation of one set over the Markov invariant measure for another. Simulations and experiments in histopathology show that our proposed metrics offer insights complementary to other instantiations of entropy in spatial analysis. The code can be found on our SMProfiler GitHub: https://github.com/nadeemlab/SMProfiler.", "authors": "James C. Mathews, Francisco Couzo, Aleksandr Petrov, Avijit Chatterjee, Saad Nadeem", "date": "2026-09-28", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.4475, "score_semantic": 0.4475, "score_lexical": 0.9577, "matched": ["histopathology"]}, {"id": "http://arxiv.org/abs/2610.00678v1", "title": "Nonparametric Distribution Matching for Self-Supervised Whole-Slide Image Condensation", "abstract": "Histological whole-slide images (WSIs) are central to computational pathology but pose severe computational challenges due to their extremely high resolution, often spanning several gigabytes per slide. To enable scalable learning, existing methods apply self-supervised data condensation to reduce computational cost, but typically rely on heuristic prototype learning and do not explicitly preserve learning-relevant feature distributions for downstream tasks. In response, we introduce a principled reformulation of WSI condensation as a distribution-matching problem under a fixed representational lens, and develop NICER, a tractable approximation framework based on a nonparametric prior with slide-adaptive capacity. Experiments on five histopathology datasets, together with clinical evaluation from a board-certified pathologist, show that NICER consistently outperforms prior methods, achieving an average accuracy improvement of 7.44% while offering improved efficiency-accuracy trade-offs, highlighting the benefits of principled, distribution-aware condensation for scalable histological representation learning. Source codes are available in https://github.com/nmduonggg/NICER.", "authors": "Duong M. Nguyen, Trong Nghia Hoang, Hang Thi Nguyen, Thanh Trung Huynh, Phi Le Nguyen, Minh N. Do", "date": "2026-09-30", "source": "arXiv", "journal": "preprint", "if": null, "score": 0.4473, "score_semantic": 0.4473, "score_lexical": 0.7563, "matched": ["histopathology"]}], "reports": [{"date": "2026-10-05", "label": "Oct 05, 2026", "n": 32}, {"date": "2026-09-28", "label": "Sep 28, 2026", "n": 32}, {"date": "2026-09-21", "label": "Sep 21, 2026", "n": 24}, {"date": "2026-09-14", "label": "Sep 14, 2026", "n": 26}, {"date": "2026-09-07", "label": "Sep 07, 2026", "n": 34}, {"date": "2026-08-31", "label": "Aug 31, 2026", "n": 19}, {"date": "2026-08-24", "label": "Aug 24, 2026", "n": 24}, {"date": "2026-08-17", "label": "Aug 17, 2026", "n": 18}, {"date": "2026-08-10", "label": "Aug 10, 2026", "n": 34}, {"date": "2026-08-03", "label": "Aug 03, 2026", "n": 17}, {"date": "2026-07-27", "label": "Jul 27, 2026", "n": 24}, {"date": "2026-07-20", "label": "Jul 20, 2026", "n": 26}, {"date": "2026-06-26", "label": "Jun 26, 2026", "n": 14}, {"date": "2026-06-19", "label": "Jun 19, 2026", "n": 38}], "prefix": "", "home": "../papers.html"}</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  const papers = DATA.papers;
+  const SHORT = 280;
+  // Slider floor: the pipeline threshold, or lower if older data scored below it
+  const FLOOR = Math.floor(Math.min(DATA.threshold, ...papers.map(p => p.score)) * 100) / 100;
+
+  // ── Persistent per-browser state (stars / read), keyed by paper URL ──
+  const store = {
+    get(k, fallback) {
+      try { const v = localStorage.getItem('papertrail:' + k); return v ? JSON.parse(v) : fallback; }
+      catch { return fallback; }
+    },
+    set(k, v) {
+      try { localStorage.setItem('papertrail:' + k, JSON.stringify(v)); } catch {}
+    },
+  };
+  const starred = new Map(Object.entries(store.get('starred', {})));  // id -> paper snapshot
+  const read    = new Set(store.get('read', []));
+  const saveStars = () => store.set('starred', Object.fromEntries(starred));
+  const saveRead  = () => store.set('read', [...read]);
+
+  const prefs = store.get('prefs', {});
+  const state = {
+    q: '',
+    view: 'all',
+    sort: prefs.sort || 'score',
+    min: FLOOR,
+    sources: new Set(),
+    keyword: null,
+    expanded: new Set(),
+    scope: 'week',        // 'week' = this report, 'all' = every archived week
+    limit: 100,           // cards rendered before "Show more"
+  };
+  const PAGE = 100;
+
+  // ── All-weeks index: loaded on demand from reports/search-index.js ──
+  let ALL = null, loadingAll = false;
+  function loadAll() {
+    if (ALL || loadingAll) return;
+    loadingAll = true;
+    const s = document.createElement('script');
+    s.src = (DATA.prefix || '') + 'search-index.js';
+    s.onload = () => { ALL = window.PAPERTRAIL_INDEX || []; loadingAll = false; render(); };
+    s.onerror = () => {
+      loadingAll = false; state.scope = 'week'; render();
+      $('count').textContent = 'Could not load the all-weeks index (reports/search-index.js).';
+    };
+    document.head.appendChild(s);
+  }
+  const pool = () => state.scope === 'all' && ALL ? ALL : papers;
+
+  // ── Helpers ──
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const scoreVar = s => s >= 0.5 ? 'var(--high)' : s >= 0.35 ? 'var(--mid)' : 'var(--low)';
+  const isPreprint = p => !p.journal || p.journal === 'preprint';
+  const url = p => (p.id && !p.id.startsWith('http')) ? 'https://doi.org/' + p.id : p.id;
+  // Dates come as "2026-09-02", "2026-Sep-02" (PubMed) or just "2026-Sep"
+  const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const dateKey = d => {
+    const m = /^(\d{4})(?:-(\w+))?(?:-(\d+))?/.exec(d || '');
+    if (!m) return 0;
+    const mon = m[2] ? (/^\d+$/.test(m[2]) ? +m[2] - 1 : MONTHS.indexOf(m[2].slice(0, 3).toLowerCase())) : 0;
+    return Date.UTC(+m[1], Math.max(mon, 0), m[3] ? +m[3] : 1);
+  };
+
+  // Keyword highlighting: whole-token matches, longest first
+  const kwRe = DATA.keywords.length
+    ? new RegExp('\\b(' + [...DATA.keywords].sort((a, b) => b.length - a.length).map(reEsc).join('|') + ')\\b', 'gi')
+    : null;
+  function highlight(text) {
+    const parts = [];
+    const res = [kwRe];
+    const q = state.q.trim();
+    if (q.length >= 2) res.push(new RegExp('(' + q.split(/\s+/).map(reEsc).join('|') + ')', 'gi'));
+    // Collect ranges from all regexes on raw text, then merge and escape
+    const ranges = [];
+    for (const re of res) {
+      if (!re) continue;
+      re.lastIndex = 0;
+      let m;
+      while ((m = re.exec(text))) { if (!m[0]) { re.lastIndex++; continue; } ranges.push([m.index, m.index + m[0].length]); }
+    }
+    if (!ranges.length) return esc(text);
+    ranges.sort((a, b) => a[0] - b[0]);
+    const merged = [ranges[0].slice()];
+    for (const r of ranges.slice(1)) {
+      const last = merged[merged.length - 1];
+      if (r[0] <= last[1]) last[1] = Math.max(last[1], r[1]); else merged.push(r.slice());
+    }
+    let i = 0;
+    for (const [a, b] of merged) { parts.push(esc(text.slice(i, a)), '<mark>', esc(text.slice(a, b)), '</mark>'); i = b; }
+    parts.push(esc(text.slice(i)));
+    return parts.join('');
+  }
+
+  const hayCache = new WeakMap();
+  const hay = p => {
+    let h = hayCache.get(p);
+    if (h === undefined) {
+      h = [p.title, p.abstract, p.authors, p.journal, p.source].join(' ').toLowerCase();
+      hayCache.set(p, h);
+    }
+    return h;
+  };
+
+  // ── Filtering ──
+  function filtered() {
+    const terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+    let list = state.view === 'starred'
+      ? [...starred.values()]
+      : pool();
+    list = list.filter(p => {
+      if (state.view !== 'starred' && p.score < state.min) return false;
+      if (state.view === 'unread' && read.has(p.id)) return false;
+      if (state.sources.size && !state.sources.has(p.source)) return false;
+      if (state.keyword && !(p.matched || []).includes(state.keyword)) return false;
+      if (terms.length) {
+        const h = hay(p);
+        if (!terms.every(t => h.includes(t))) return false;
+      }
+      return true;
+    });
+    const by = {
+      score: (a, b) => b.score - a.score,
+      date:  (a, b) => dateKey(b.date) - dateKey(a.date) || b.score - a.score,
+      if:    (a, b) => (b.if ?? -1) - (a.if ?? -1) || b.score - a.score,
+    }[state.sort];
+    return [...list].sort(by);
+  }
+
+  // ── Rendering ──
+  const ICON_STAR = '<svg viewBox="0 0 24 24" fill="FILL" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+  // Link to the report(s) a paper appeared in, when not the one being viewed
+  const LABELS = Object.fromEntries((DATA.reports || []).map(r => [r.date, r.label]));
+  function weekTag(p) {
+    const weeks = (p.weeks || []).filter(w => w !== DATA.date || state.scope === 'all');
+    if (!weeks.length || (state.scope !== 'all' && state.view !== 'starred')) return '';
+    const [w, ...rest] = weeks;
+    const label = w === DATA.date ? 'This week' : 'Week of ' + (LABELS[w] || w);
+    return `<a class="week-tag" href="${esc((DATA.prefix || '') + w + '.html')}" title="${esc(weeks.map(x => LABELS[x] || x).join(', '))}">${esc(label)}${rest.length ? ` +${rest.length}` : ''}</a>`;
+  }
+
+  function card(p) {
+    const s = p.score ?? 0;
+    const abs = p.abstract || '';
+    const long = abs.length > SHORT;
+    const open = state.expanded.has(p.id);
+    const shown = long && !open ? abs.slice(0, SHORT) + '…' : abs;
+    const ifStr = p.if != null ? ` · IF ${Number(p.if).toFixed(1)}` : '';
+    const authors = p.authors || '';
+    const isStar = starred.has(p.id), isRead = read.has(p.id);
+    const u = url(p);
+    return `
+      <article class="card${isRead ? ' is-read' : ''}" style="--score-color:${scoreVar(s)}" data-id="${esc(p.id)}">
+        <div class="card-top">
+          <a class="title" href="${esc(u)}" target="_blank" rel="noopener">${highlight(p.title || '')}</a>
+          <div class="score-block" title="semantic ${p.score_semantic ?? '–'} · lexical ${p.score_lexical ?? '–'}">
+            <div class="score-pill">${s.toFixed(2)}</div>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.min(s * 100, 100)}%"></div></div>
+          </div>
+        </div>
+        <div class="card-meta">
+          <span class="badge${isPreprint(p) ? ' preprint' : ''}">${esc(p.source)}</span>
+          ${!isPreprint(p) ? `<span>${esc(p.journal)}${ifStr}</span>` : ''}
+          <span>${esc(p.date)}</span>
+          <span title="${esc(authors)}">${esc(authors.length > 60 ? authors.slice(0, 60) + '…' : authors)}</span>
+          ${weekTag(p)}
+        </div>
+        <div class="abstract">${highlight(shown)}${long ? `<button class="toggle-btn" data-act="toggle">${open ? 'Show less' : 'Show more'}</button>` : ''}</div>
+        <div class="card-foot">
+          <div class="matched">${(p.matched || []).map(k => `<button class="kw" data-kw="${esc(k)}" title="Filter by this keyword">${esc(k)}</button>`).join('')}</div>
+          <button class="act${isStar ? ' on' : ''}" data-act="star" aria-pressed="${isStar}">${ICON_STAR.replace('FILL', isStar ? 'currentColor' : 'none')}${isStar ? 'Starred' : 'Star'}</button>
+          <button class="act${isRead ? ' read-on' : ''}" data-act="read" aria-pressed="${isRead}">${ICON_CHECK}${isRead ? 'Read' : 'Mark read'}</button>
+          <a class="doi-link" href="${esc(u)}" target="_blank" rel="noopener">Open ↗</a>
+        </div>
+      </article>`;
+  }
+
+  const $ = id => document.getElementById(id);
+
+  function renderChips() {
+    const counts = {};
+    const src = state.view === 'starred' ? [...starred.values()] : pool();
+    src.forEach(p => { counts[p.source] = (counts[p.source] || 0) + 1; });
+    $('sources').innerHTML = Object.keys(counts).sort().map(src =>
+      `<button class="chip" data-src="${esc(src)}" aria-pressed="${state.sources.has(src)}">${esc(src)}<span class="n">${counts[src]}</span></button>`
+    ).join('');
+    const kwCounts = {};
+    src.forEach(p => (p.matched || []).forEach(k => { kwCounts[k] = (kwCounts[k] || 0) + 1; }));
+    $('keywords').innerHTML = DATA.keywords.map(k =>
+      `<button class="chip" data-kw="${esc(k)}" aria-pressed="${state.keyword === k}">${esc(k)}<span class="n">${kwCounts[k] || 0}</span></button>`
+    ).join('');
+  }
+
+  // Filter changes start from the first page again
+  const update = () => { state.limit = PAGE; render(); };
+
+  function render() {
+    const list = filtered();
+    const papersEl = $('papers');
+    if (state.scope === 'all' && !ALL) {
+      papersEl.innerHTML = '<div class="empty">Loading all weeks…</div>';
+    } else if (list.length) {
+      const rest = list.length - state.limit;
+      papersEl.innerHTML = list.slice(0, state.limit).map(card).join('') +
+        (rest > 0 ? `<button class="more-btn" data-act="more">Show ${Math.min(rest, PAGE)} more (${rest} left)</button>` : '');
+    } else {
+      papersEl.innerHTML = `<div class="empty">${state.view === 'starred' && !starred.size
+        ? 'No starred papers yet — star papers to build a reading list. It is saved in this browser.'
+        : 'No papers match these filters.'}</div>`;
+    }
+    const base = state.view === 'starred' ? starred.size : pool().length;
+    const what = state.view === 'starred' ? 'starred papers'
+      : state.scope === 'all' ? `papers across ${(DATA.reports || []).length} weeks` : 'papers';
+    $('count').textContent = `Showing ${list.length} of ${base} ${what}`;
+    $('star-n').textContent = starred.size ? `(${starred.size})` : '';
+    $('export').hidden = state.view !== 'starred' || !starred.size;
+    const dirty = state.q || state.sources.size || state.keyword || state.min !== FLOOR;
+    $('reset').hidden = !dirty;
+    document.querySelectorAll('#view button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === state.view));
+    document.querySelectorAll('#scope button').forEach(b => b.setAttribute('aria-pressed', b.dataset.scope === state.scope));
+    $('scope').hidden = (DATA.reports || []).length < 2;
+    renderChips();
+  }
+
+  // ── Header / footer ──
+  $('meta').textContent =
+    `${papers.length} of ${DATA.total} relevant papers · Past ${DATA.days} days · Generated ${DATA.generated}`;
+  $('footer').textContent = `Generated by PaperTrail · Sources: ${DATA.sources.join(', ')}`;
+  if (DATA.imported) {
+    $('meta').insertAdjacentHTML('afterend',
+      '<div class="imported-note">Recovered from an older report: author lists are shortened.</div>');
+  }
+
+  // ── Week navigation (reports are listed newest first) ──
+  const REPORTS = DATA.reports || [];
+  const here = REPORTS.findIndex(r => r.date === DATA.date);
+  const href = r => (DATA.prefix || '') + r.date + '.html';
+  if (REPORTS.length > 1 && here !== -1) {
+    $('weeks').hidden = false;
+    $('week').innerHTML = REPORTS.map((r, i) =>
+      `<option value="${i}"${i === here ? ' selected' : ''}>${esc(r.label)} · ${r.n} papers${i === 0 ? ' · latest' : ''}</option>`
+    ).join('');
+    $('week').addEventListener('change', e => { location.href = href(REPORTS[+e.target.value]); });
+    const link = (el, r) => r ? (el.href = href(r)) : el.setAttribute('aria-disabled', 'true');
+    link($('prev'), REPORTS[here + 1]);
+    link($('next'), REPORTS[here - 1]);
+    if (here === 0) $('latest').hidden = true; else $('latest').href = DATA.home;
+  }
+
+  // ── Controls ──
+  const min = $('min');
+  min.min = FLOOR;
+  min.value = state.min;
+  $('min-val').textContent = state.min.toFixed(2);
+  $('sort').value = state.sort;
+
+  let t;
+  $('q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value; update(); }, 120); });
+  min.addEventListener('input', e => { state.min = +e.target.value; $('min-val').textContent = state.min.toFixed(2); update(); });
+  $('sort').addEventListener('change', e => { state.sort = e.target.value; store.set('prefs', { ...prefs, sort: state.sort }); update(); });
+  $('view').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.view = b.dataset.view; update();
+  });
+  $('scope').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.scope = b.dataset.scope;
+    if (state.scope === 'all') loadAll();
+    update();
+  });
+  $('sources').addEventListener('click', e => {
+    const b = e.target.closest('[data-src]'); if (!b) return;
+    const s = b.dataset.src;
+    state.sources.has(s) ? state.sources.delete(s) : state.sources.add(s);
+    update();
+  });
+  const toggleKw = k => { state.keyword = state.keyword === k ? null : k; update(); };
+  $('keywords').addEventListener('click', e => { const b = e.target.closest('[data-kw]'); if (b) toggleKw(b.dataset.kw); });
+  $('reset').addEventListener('click', () => {
+    state.q = ''; $('q').value = '';
+    state.sources.clear(); state.keyword = null;
+    state.min = FLOOR; min.value = state.min; $('min-val').textContent = state.min.toFixed(2);
+    update();
+  });
+  $('export').addEventListener('click', () => {
+    const lines = [...starred.values()].sort((a, b) => b.score - a.score).map(p =>
+      `- [${p.title}](${url(p)})  \n  ${p.authors ? p.authors.split(/[,;]/)[0].trim() + ' et al. · ' : ''}${isPreprint(p) ? p.source : p.journal} · ${p.date}`);
+    const blob = new Blob([`# PaperTrail — starred papers\n\n${lines.join('\n')}\n`], { type: 'text/markdown' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'papertrail-starred.md' });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  $('papers').addEventListener('click', e => {
+    const kw = e.target.closest('.matched [data-kw]');
+    if (kw) { toggleKw(kw.dataset.kw); return; }
+    const btn = e.target.closest('[data-act]'); if (!btn) return;
+    if (btn.dataset.act === 'more') { state.limit += PAGE; render(); return; }
+    const id = btn.closest('.card').dataset.id;
+    const p = pool().find(x => x.id === id) || papers.find(x => x.id === id) || starred.get(id);
+    const act = btn.dataset.act;
+    if (act === 'toggle') { state.expanded.has(id) ? state.expanded.delete(id) : state.expanded.add(id); }
+    if (act === 'star')   { starred.has(id) ? starred.delete(id) : starred.set(id, { ...p, weeks: p.weeks || [DATA.date] }); saveStars(); }
+    if (act === 'read')   { read.has(id) ? read.delete(id) : read.add(id); saveRead(); }
+    render();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); $('q').focus(); }
+    if (e.key === 'Escape' && document.activeElement === $('q')) { $('q').blur(); }
+    const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+    if (!typing && e.key === '[' && $('prev').href) location.href = $('prev').href;
+    if (!typing && e.key === ']' && $('next').href) location.href = $('next').href;
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
