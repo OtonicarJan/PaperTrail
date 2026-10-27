@@ -6,6 +6,8 @@ medRxiv** and **PubMed**, ranks them by relevance to a set of keywords, and
 publishes an interactive report you can search, filter and keep a reading
 list in.
 
+**[View the latest report →](https://otonicarjan.github.io/PaperTrail/papers.html)**
+
 The current setup tracks tumor evolution, clonal evolution, chromosomal
 instability / aneuploidy, genomic instability and computational pathology.
 Everything is driven by [`config.yaml`](config.yaml), so it can follow any
@@ -13,10 +15,12 @@ topic.
 
 ## The report
 
-[`papers.html`](papers.html) is always the latest week. Every week is also
-archived as [`reports/YYYY-MM-DD.html`](reports/). Each report is a single
-self-contained file, so you can open it straight from disk or serve it with
-GitHub Pages.
+The report is published with GitHub Pages at
+**https://otonicarjan.github.io/PaperTrail/papers.html**, which is always the
+latest week. Every week is also archived as `reports/YYYY-MM-DD.html`, e.g.
+[the week of Oct 26, 2026](https://otonicarjan.github.io/PaperTrail/reports/2026-10-26.html).
+Each report is a single self-contained file, so you can also open
+[`papers.html`](papers.html) from a local clone.
 
 - **Week navigation:** a dropdown, ‹ › buttons and the `[` / `]` keys
 - **Search:** in titles, abstracts, authors and journals, for the current
